@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# 2012.10.08
+# modified 2012.10.14
 # zero.universe@gmail.com
-
+#
+# iptables for a kvm-host
+#
 ########################### definitions ###########################
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
-WORLD="eth0"
+WORLD="eth1"
 VM0="virbr0"
 VM1="virbr1"
 MOD=$(which modprobe)
@@ -81,21 +83,7 @@ case "$1" in
     $IPT6 -P INPUT DROP
     $IPT6 -P OUTPUT ACCEPT
     $IPT6 -P FORWARD DROP
-
-########################### allow loopback networking ###########################
-
-    $IPT -A INPUT -i lo -j ACCEPT
-    $IPT -A MY_TCP -i lo -j ACCEPT
-    $IPT -A MY_UDP -i lo -j ACCEPT
-    $IPT -A MY_ICMP -i lo -j ACCEPT
-    $IPT -A OUTPUT -o lo -j ACCEPT
-        
-    $IPT6 -A INPUT -i lo -j ACCEPT
-    $IPT6 -A MY_TCPv6 -i lo -j ACCEPT
-    $IPT6 -A MY_UDPv6 -i lo -j ACCEPT
-    $IPT6 -A MY_ICMPv6 -i lo -j ACCEPT
-    $IPT6 -A OUTPUT -o lo -j ACCEPT
-    
+   
 ########################### own tables ###########################
 
 ### MY_ICMP Chain
@@ -136,6 +124,20 @@ case "$1" in
 
 ### MY_DROP
 #    $IPT -N MY_DROP
+
+########################### allow loopback networking ###########################
+
+    $IPT -A INPUT -i lo -j ACCEPT
+    $IPT -A MY_TCP -i lo -j ACCEPT
+    $IPT -A MY_UDP -i lo -j ACCEPT
+    $IPT -A MY_ICMP -i lo -j ACCEPT
+    $IPT -A OUTPUT -o lo -j ACCEPT
+        
+    $IPT6 -A INPUT -i lo -j ACCEPT
+    $IPT6 -A MY_TCPv6 -i lo -j ACCEPT
+    $IPT6 -A MY_UDPv6 -i lo -j ACCEPT
+    $IPT6 -A MY_ICMPv6 -i lo -j ACCEPT
+    $IPT6 -A OUTPUT -o lo -j ACCEPT
 
 ########################### drop invalid packets ###########################
 
