@@ -27,3 +27,9 @@ elly.router
 
 elly.standalone
 -> kind of a "template" for starting from scratch
+
+elly.soekris.router
+-> firewall for a soekris router with 4 nics
+
+elly.soekris.better
+-> like elly.soekris.router but thought through ... still in progress
