@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# last modified 2012.10.28
+# last modified 2012.10.29
 # firewall for soekris net6501-50
 # zero.universe@gmail.com
 #
@@ -523,15 +523,421 @@ case "$1" in
     $IPT6 -A MY_UDP_LANv6 -j DROP
     
 ###########################################################################################################################################################################################################
-######################  nic for wifi-lan:  WLAN  #######################
+########################  nic for wifi:  WLAN  #########################
 ########################################################################
 
+### WLAN Chain
+    $IPT -N WLANv4
+    $IPT6 -N WLANv6
+    
+### create MY_ICMP_WLAN rules
+	$IPT -N MY_ICMP_WLANv4
+	$IPT6 -N MY_ICMP_WLANv6
 
+### WLAN icmp traffic goes to MY_ICMP_WLAN
+    $IPT -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv4
+    $IPT6 -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv6
+    
+    $IPT -A MY_ICMP_WLANv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_ICMP_WLANv6 -m state --state INVALID -j DROP
+    
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "WLAN_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "WLAN_icmp-echo-reply: "
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    
+### log rest 
+	$IPT -A MY_ICMP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 icmp: "
+	
+### standard policy	
+    $IPT -A MY_ICMP_WLANv4 -j DROP
+    
+### MY_ICMP_WLANv6
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
 
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
+### router advertisements
+    $IPT6 -A MY_ICMP_WLANv6 -i $WLAN -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -i $WLAN -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
 
+### router neighbor advertisements
+    #$IPT6 -A MY_ICMP_WLANv6 -i $WLAN -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -i $WLAN -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
 
+### mobile-ipv6
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### connection tracking
+	#$IPT6 -A MY_ICMP_WLANv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	
+### log rest
+	$IPT6 -A MY_ICMP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 icmp: "
+	
+### standard policy	
+    $IPT6 -A MY_ICMP_WLANv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### TCP_WLAN
+
+### create MY_TCP_WLAN rules
+	$IPT -N MY_TCP_WLANv4
+	$IPT6 -N MY_TCP_WLANv6
+
+### WLAN tcp traffic goes to MY_TCP_WORLD
+    $IPT -A INPUT -i $WLAN -p tcp -j MY_TCP_WLANv4
+    $IPT6 -A INPUT -i $WLAN -p tcp -j MY_TCP_WLANv6
+    
+    $IPT -A MY_ICMP_WLANv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_ICMP_WLANv6 -m state --state INVALID -j DROP
+    
+###  drop stealth scans etc. ###
+
+### no flags
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+### SYN and FIN flags
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+### SYN and RST flags at the same time
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+### FIN and RST flags at the same time
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+### FIN but no ACK
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+### PSH but no ACK
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+### URG but no ACK
+    $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### SSH
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v4-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v6-access: "
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+
+### DHCPD
+	$IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 67 -j ACCEPT
+
+	$IPT6 -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 547 -j ACCEPT
+
+### DNS
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-tcp-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    
+	$IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-tcp-access: "
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+
+### IPSEC
+    #$IPT -A MY_TCP_WLANv4 -i $WLAN -p 50 -j ACCEPT
+    #$IPT -A MY_TCP_WLANv4 -i $WLAN -p 51 -j ACCEPT
+    
+### Skype
+    #$IPT -A MY_TCP_WLANv4 -i $xxx -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+
+### log rest
+	$IPT -A MY_TCP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 tcp: "
+	$IPT6 -A MY_TCP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 tcp: "
+	
+### drop rest
+    $IPT -A MY_TCP_WLANv4 -j DROP
+    $IPT6 -A MY_TCP_WLANv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### UDP_WLAN
+
+### create MY_UDP_WLAN rules
+	$IPT -N MY_UDP_WLANv4
+	$IPT6 -N MY_UDP_WLANv6
+
+### WLAN UDP traffic goes to MY_UDP_WLAN
+    $IPT -A INPUT -i $WLAN -p udp -j MY_UDP_WLANv4
+    $IPT6 -A INPUT -i $WLAN -p udp -j MY_UDP_WLANv6
+    
+    $IPT -A MY_UDP_WLANv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_UDP_WLANv6 -m state --state INVALID -j DROP
+    
+### DHCPD
+	$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 67 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 547 -j ACCEPT
+
+### DNS
+	$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+
+### Transmission Torrent
+	#$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "WLAN_transmission-v4-udp-access: "
+    #$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j ACCEPT
+
+### IPSEC
+	#$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 500 -j ACCEPT
+
+### OPENVPN_V2
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+
+### Skype
+	#$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 23103 -j ACCEPT
+
+### log rest
+	$IPT -A MY_UDP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 udp: "
+	$IPT6 -A MY_UDP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 udp: "
+	
+### drop rest
+    $IPT -A MY_UDP_WLANv4 -j DROP
+    $IPT6 -A MY_UDP_WLANv6 -j DROP
 
 ###########################################################################################################################################################################################################
 #########################  nic for kvms:  KVMS  ########################
 ########################################################################
+
+### KVMS Chain
+    $IPT -N KVMSv4
+    $IPT6 -N KVMSv6
+    
+### create MY_ICMP_KVMS rules
+	$IPT -N MY_ICMP_KVMSv4
+	$IPT6 -N MY_ICMP_KVMSv6
+
+### KVMS icmp traffic goes to MY_ICMP_KVMS
+    $IPT -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv4
+    $IPT6 -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv6
+    
+    $IPT -A MY_ICMP_KVMSv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_ICMP_KVMSv6 -m state --state INVALID -j DROP
+    
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "KVMS_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    
+### log rest 
+	$IPT -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 icmp: "
+	
+### standard policy	
+    $IPT -A MY_ICMP_KVMSv4 -j DROP
+    
+### MY_ICMP_KVMSv6
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    $IPT6 -A MY_ICMP_KVMSv6 -i $KVMS -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -i $KVMS -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    #$IPT6 -A MY_ICMP_KVMSv6 -i $KVMS -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -i $KVMS -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### connection tracking
+	#$IPT6 -A MY_ICMP_KVMSv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	
+### log rest
+	$IPT6 -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 icmp: "
+	
+### standard policy	
+    $IPT6 -A MY_ICMP_KVMSv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### TCP_KVMS
+
+### create MY_TCP_KVMS rules
+	$IPT -N MY_TCP_KVMSv4
+	$IPT6 -N MY_TCP_KVMSv6
+
+### KVMS tcp traffic goes to MY_TCP_WORLD
+    $IPT -A INPUT -i $KVMS -p tcp -j MY_TCP_KVMSv4
+    $IPT6 -A INPUT -i $KVMS -p tcp -j MY_TCP_KVMSv6
+    
+    $IPT -A MY_ICMP_KVMSv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_ICMP_KVMSv6 -m state --state INVALID -j DROP
+    
+###  drop stealth scans etc. ###
+
+### no flags
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+### SYN and FIN flags
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+### SYN and RST flags at the same time
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+### FIN and RST flags at the same time
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+### FIN but no ACK
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+### PSH but no ACK
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+### URG but no ACK
+    $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### SSH
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v4-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v6-access: "
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 22 -j ACCEPT
+
+### DHCPD
+	$IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 67 -j ACCEPT
+
+	$IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 547 -j ACCEPT
+
+### DNS
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-tcp-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    
+	$IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-tcp-access: "
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 53 -j ACCEPT
+
+### IPSEC
+    #$IPT -A MY_TCP_KVMSv4 -i $KVMS -p 50 -j ACCEPT
+    #$IPT -A MY_TCP_KVMSv4 -i $KVMS -p 51 -j ACCEPT
+    
+### Skype
+    #$IPT -A MY_TCP_KVMSv4 -i $xxx -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+
+### log rest
+	$IPT -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 tcp: "
+	$IPT6 -A MY_TCP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 tcp: "
+	
+### drop rest
+    $IPT -A MY_TCP_KVMSv4 -j DROP
+    $IPT6 -A MY_TCP_KVMSv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### UDP_KVMS
+
+### create MY_UDP_KVMS rules
+	$IPT -N MY_UDP_KVMSv4
+	$IPT6 -N MY_UDP_KVMSv6
+
+### KVMS UDP traffic goes to MY_UDP_KVMS
+    $IPT -A INPUT -i $KVMS -p udp -j MY_UDP_KVMSv4
+    $IPT6 -A INPUT -i $KVMS -p udp -j MY_UDP_KVMSv6
+    
+    $IPT -A MY_UDP_KVMSv4 -m state --state INVALID -j DROP
+    $IPT6 -A MY_UDP_KVMSv6 -m state --state INVALID -j DROP
+    
+### DHCPD
+	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 67 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 547 -j ACCEPT
+
+### DNS
+	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j ACCEPT
+
+### Transmission Torrent
+	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "KVMS_transmission-v4-udp-access: "
+    #$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j ACCEPT
+
+### IPSEC
+	#$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 500 -j ACCEPT
+
+### OPENVPN_V2
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    
+    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m state --state NEW -p udp --dport 1194 -j ACCEPT
+
+### Skype
+	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 23103 -j ACCEPT
+
+### log rest
+	$IPT -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 udp: "
+	$IPT6 -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 udp: "
+	
+### drop rest
+    $IPT -A MY_UDP_KVMSv4 -j DROP
+    $IPT6 -A MY_UDP_KVMSv6 -j DROP
