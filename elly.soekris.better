@@ -94,9 +94,9 @@ case "$1" in
 
 ########################### allow forwarding ###########################
 
-    $IPT -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-    $IPT6 -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ###################### allow loopback networking #######################
 
@@ -153,16 +153,16 @@ case "$1" in
     $IPT -A INPUT -i $WORLD -p icmp -j MY_ICMP_WORLDv4
     $IPT6 -A INPUT -i $WORLD -p icmpv6 -j MY_ICMP_WORLDv6
     
-    $IPT -A MY_ICMP_WORLDv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_WORLDv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
     
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
-    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
+    $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### log rest
 	$IPT -A MY_ICMP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 icmp: "
@@ -171,10 +171,10 @@ case "$1" in
     $IPT -A MY_ICMP_WORLDv4 -j DROP
     
 ### MY_ICMP_WORLDv6
-    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
     $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
     $IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
@@ -211,7 +211,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_WORLDv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	#$IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 icmp: "
@@ -231,8 +231,8 @@ case "$1" in
     $IPT -A INPUT -i $WORLD -p tcp -j MY_TCP_WORLDv4
     $IPT6 -A INPUT -i $WORLD -p tcp -j MY_TCP_WORLDv6
     
-    $IPT -A MY_ICMP_WORLDv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_WORLDv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
 ###  drop stealth scans etc. ###
 
@@ -258,11 +258,11 @@ case "$1" in
     $IPT -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    $IPT -A MY_TCP_WORLDv4 -i $WORLD -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
-    $IPT -A MY_TCP_WORLDv4 -i $WORLD -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT -A MY_TCP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
+    $IPT -A MY_TCP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-    $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
-    $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
+    $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
@@ -284,25 +284,25 @@ case "$1" in
     $IPT -A INPUT -i $WORLD -p udp -j MY_UDP_WORLDv4
     $IPT6 -A INPUT -i $WORLD -p udp -j MY_UDP_WORLDv6
     
-    $IPT -A MY_UDP_WORLDv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_UDP_WORLDv6 -m state --state INVALID -j DROP
+    $IPT -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
     
 ### Transmission Torrent
-	#$IPT -A MY_UDP_WORLDv4 -i $WORLD -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v4-udp-acces: "
-    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v4-udp-acces: "
+    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
     
-    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v6-udp-acces: "
-    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m state --state NEW -p udp --dport 6969 -j ACCEPT
+    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v6-udp-acces: "
+    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### OPENVPN_V2
-    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
-    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
+    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v6-udp-access: "
-    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v6-udp-access: "
+    #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT -A MY_UDP_WORLDv4 -i $WORLD -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
@@ -328,16 +328,16 @@ case "$1" in
     $IPT -A INPUT -i $LAN -p icmp -j MY_ICMP_LANv4
     $IPT6 -A INPUT -i $LAN -p icmp -j MY_ICMP_LANv6
     
-    $IPT -A MY_ICMP_LANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_LANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_LANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate INVALID -j DROP
     
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "LAN_icmp-fragmentation-needed: "
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "LAN_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "LAN_icmp-echo-reply: "
-    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "LAN_icmp-echo-reply: "
+    $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### log rest 
 	$IPT -A MY_ICMP_LANv4 -j LOG --log-prefix "forbidden from lan v4 icmp: "
@@ -346,10 +346,10 @@ case "$1" in
     $IPT -A MY_ICMP_LANv4 -j DROP
     
 ### MY_ICMP_LANv6
-    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
     $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
     $IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
@@ -386,7 +386,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_LANv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	#$IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_LANv6 -j LOG --log-prefix "forbidden from lan v6 icmp: "
@@ -406,8 +406,8 @@ case "$1" in
     $IPT -A INPUT -i $LAN -p tcp -j MY_TCP_LANv4
     $IPT6 -A INPUT -i $LAN -p tcp -j MY_TCP_LANv6
     
-    $IPT -A MY_ICMP_LANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_LANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_LANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate INVALID -j DROP
     
 ###  drop stealth scans etc. ###
 
@@ -433,32 +433,32 @@ case "$1" in
     $IPT -A MY_TCP_LANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    $IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v4-access: "
-    $IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v4-access: "
+    $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-    $IPT6 -A MY_TCP_LANv6 -i $LAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v6-access: "
-    $IPT6 -A MY_TCP_LANv6 -i $LAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v6-access: "
+    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-	$IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-tcp-access: "
-    $IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 67 -j ACCEPT
+	$IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
 
-	$IPT6 -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-tcp-access: "
-    $IPT6 -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 547 -j ACCEPT
+	$IPT6 -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
-    $IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v4-tcp-access: "
-    $IPT -A MY_TCP_LANv4 -i $LAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v4-tcp-access: "
+    $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
     
-	$IPT6 -A MY_TCP_LANv6 -i $LAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v6-tcp-access: "
-    $IPT6 -A MY_TCP_LANv6 -i $LAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+	$IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v6-tcp-access: "
+    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### IPSEC
     #$IPT -A MY_TCP_LANv4 -i $LAN -p 50 -j ACCEPT
     #$IPT -A MY_TCP_LANv4 -i $LAN -p 51 -j ACCEPT
     
 ### Skype
-    #$IPT -A MY_TCP_LANv4 -i $xxx -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+    #$IPT -A MY_TCP_LANv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_TCP_LANv4 -j LOG --log-prefix "forbidden from lan v4 tcp: "
@@ -480,39 +480,39 @@ case "$1" in
     $IPT -A INPUT -i $LAN -p udp -j MY_UDP_LANv4
     $IPT6 -A INPUT -i $LAN -p udp -j MY_UDP_LANv6
     
-    $IPT -A MY_UDP_LANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_UDP_LANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_UDP_LANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_UDP_LANv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-	$IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-udp-access: "
-    $IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 67 -j ACCEPT
+	$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
     
-    $IPT6 -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-udp-access: "
-    $IPT6 -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 547 -j ACCEPT
+    $IPT6 -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
-	$IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v4-udp-access: "
-    $IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+	$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v4-udp-access: "
+    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
-    $IPT6 -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v6-udp-access: "
-    $IPT6 -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+    $IPT6 -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v6-udp-access: "
+    $IPT6 -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT -A MY_UDP_LANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "lan_transmission-v4-udp-access: "
-    #$IPT -A MY_UDP_LANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT -A MY_UDP_LANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "lan_transmission-v4-udp-access: "
+    #$IPT -A MY_UDP_LANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### IPSEC
-	#$IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 500 -j ACCEPT
+	#$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    $IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
-    $IPT -A MY_UDP_LANv4 -i $LAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
+    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    $IPT6 -A MY_UDP_LANv6 -i $LAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
-    $IPT6 -A MY_UDP_LANv6 -i $LAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
+    $IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT -A MY_UDP_LANv4 -i $xxx -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT -A MY_UDP_LANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_UDP_LANv4 -j LOG --log-prefix "forbidden from lan v4 udp: "
@@ -538,16 +538,16 @@ case "$1" in
     $IPT -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv4
     $IPT6 -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv6
     
-    $IPT -A MY_ICMP_WLANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_WLANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_WLANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate INVALID -j DROP
     
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "WLAN_icmp-fragmentation-needed: "
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "WLAN_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "WLAN_icmp-echo-reply: "
-    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "WLAN_icmp-echo-reply: "
+    $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### log rest 
 	$IPT -A MY_ICMP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 icmp: "
@@ -556,10 +556,10 @@ case "$1" in
     $IPT -A MY_ICMP_WLANv4 -j DROP
     
 ### MY_ICMP_WLANv6
-    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
     $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
     $IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
@@ -596,7 +596,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_WLANv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	#$IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 icmp: "
@@ -616,8 +616,8 @@ case "$1" in
     $IPT -A INPUT -i $WLAN -p tcp -j MY_TCP_WLANv4
     $IPT6 -A INPUT -i $WLAN -p tcp -j MY_TCP_WLANv6
     
-    $IPT -A MY_ICMP_WLANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_WLANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_WLANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate INVALID -j DROP
     
 ###  drop stealth scans etc. ###
 
@@ -643,32 +643,32 @@ case "$1" in
     $IPT -A MY_TCP_WLANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v4-access: "
-    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v4-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v6-access: "
-    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v6-access: "
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-	$IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-tcp-access: "
-    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 67 -j ACCEPT
+	$IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
 
-	$IPT6 -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-tcp-access: "
-    $IPT6 -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 547 -j ACCEPT
+	$IPT6 -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
-    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-tcp-access: "
-    $IPT -A MY_TCP_WLANv4 -i $WLAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-tcp-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
     
-	$IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-tcp-access: "
-    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+	$IPT6 -A MY_TCP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-tcp-access: "
+    $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### IPSEC
     #$IPT -A MY_TCP_WLANv4 -i $WLAN -p 50 -j ACCEPT
     #$IPT -A MY_TCP_WLANv4 -i $WLAN -p 51 -j ACCEPT
     
 ### Skype
-    #$IPT -A MY_TCP_WLANv4 -i $xxx -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+    #$IPT -A MY_TCP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_TCP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 tcp: "
@@ -690,39 +690,39 @@ case "$1" in
     $IPT -A INPUT -i $WLAN -p udp -j MY_UDP_WLANv4
     $IPT6 -A INPUT -i $WLAN -p udp -j MY_UDP_WLANv6
     
-    $IPT -A MY_UDP_WLANv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_UDP_WLANv6 -m state --state INVALID -j DROP
+    $IPT -A MY_UDP_WLANv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_UDP_WLANv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-	$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-udp-access: "
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 67 -j ACCEPT
+	$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
     
-    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-udp-access: "
-    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 547 -j ACCEPT
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
-	$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-udp-access: "
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+	$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
-    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-udp-access: "
-    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "WLAN_dns-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "WLAN_transmission-v4-udp-access: "
-    #$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT -A MY_UDP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "WLAN_transmission-v4-udp-access: "
+    #$IPT -A MY_UDP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### IPSEC
-	#$IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 500 -j ACCEPT
+	#$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v4-udp-access: "
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v4-udp-access: "
+    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v6-udp-access: "
-    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v6-udp-access: "
+    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT -A MY_UDP_WLANv4 -i $xxx -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT -A MY_UDP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_UDP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 udp: "
@@ -748,16 +748,16 @@ case "$1" in
     $IPT -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv4
     $IPT6 -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv6
     
-    $IPT -A MY_ICMP_KVMSv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_KVMSv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "KVMS_icmp-fragmentation-needed: "
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "KVMS_icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
-    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
+    $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### log rest 
 	$IPT -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 icmp: "
@@ -766,10 +766,10 @@ case "$1" in
     $IPT -A MY_ICMP_KVMSv4 -j DROP
     
 ### MY_ICMP_KVMSv6
-    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
     $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
     $IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
@@ -806,7 +806,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_KVMSv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	#$IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 icmp: "
@@ -826,8 +826,8 @@ case "$1" in
     $IPT -A INPUT -i $KVMS -p tcp -j MY_TCP_KVMSv4
     $IPT6 -A INPUT -i $KVMS -p tcp -j MY_TCP_KVMSv6
     
-    $IPT -A MY_ICMP_KVMSv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_ICMP_KVMSv6 -m state --state INVALID -j DROP
+    $IPT -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
 ###  drop stealth scans etc. ###
 
@@ -853,32 +853,32 @@ case "$1" in
     $IPT -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v4-access: "
-    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v4-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v6-access: "
-    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "KVMS_ssh-v6-access: "
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-	$IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-tcp-access: "
-    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 67 -j ACCEPT
+	$IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
 
-	$IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-tcp-access: "
-    $IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 547 -j ACCEPT
+	$IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
-    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-tcp-access: "
-    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-tcp-access: "
+    $IPT -A MY_TCP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
     
-	$IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-tcp-access: "
-    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m state --state NEW -p tcp --dport 53 -j ACCEPT
+	$IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-tcp-access: "
+    $IPT6 -A MY_TCP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### IPSEC
     #$IPT -A MY_TCP_KVMSv4 -i $KVMS -p 50 -j ACCEPT
     #$IPT -A MY_TCP_KVMSv4 -i $KVMS -p 51 -j ACCEPT
     
 ### Skype
-    #$IPT -A MY_TCP_KVMSv4 -i $xxx -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+    #$IPT -A MY_TCP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 tcp: "
@@ -900,39 +900,39 @@ case "$1" in
     $IPT -A INPUT -i $KVMS -p udp -j MY_UDP_KVMSv4
     $IPT6 -A INPUT -i $KVMS -p udp -j MY_UDP_KVMSv6
     
-    $IPT -A MY_UDP_KVMSv4 -m state --state INVALID -j DROP
-    $IPT6 -A MY_UDP_KVMSv6 -m state --state INVALID -j DROP
+    $IPT -A MY_UDP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_UDP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-udp-access: "
-    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 67 -j ACCEPT
+	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
     
-    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-udp-access: "
-    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 547 -j ACCEPT
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
-	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-udp-access: "
-    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j ACCEPT
+	$IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
-    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-udp-access: "
-    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 53 -j ACCEPT
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "KVMS_transmission-v4-udp-access: "
-    #$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "KVMS_transmission-v4-udp-access: "
+    #$IPT -A MY_UDP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### IPSEC
-	#$IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 500 -j ACCEPT
+	#$IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v4-udp-access: "
-    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v4-udp-access: "
+    $IPT -A MY_UDP_KVMSv4 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v6-udp-access: "
-    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v6-udp-access: "
+    $IPT6 -A MY_UDP_KVMSv6 -i $KVMS -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### log rest
 	$IPT -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 udp: "

@@ -143,32 +143,32 @@ case "$1" in
     
 ########################### drop invalid packets ###########################
 
-	#$IPT -A INPUT -m state --state INVALID -j DROP
-	$IPT -A MY_TCP -m state --state INVALID -j DROP
+	#$IPT -A INPUT -m conntrack --ctstate INVALID -j DROP
+	$IPT -A MY_TCP -m conntrack --ctstate INVALID -j DROP
 
-	#$IPT6 -A INPUT -m state --state INVALID -j DROP
-	$IPT6 -A MY_TCPv6 -m state --state INVALID -j DROP
+	#$IPT6 -A INPUT -m conntrack --ctstate INVALID -j DROP
+	$IPT6 -A MY_TCPv6 -m conntrack --ctstate INVALID -j DROP
 
 ########################### log all invalid packets ###########################
 
 ### log all invalid packets
-    #$IPT -A INPUT -m state --state INVALID -m limit --limit 7200/h -j LOG --log-prefix "INPUT INVALID "
-    #$IPT -A OUTPUT -m state --state INVALID -m limit --limit 7200/h -j LOG --log-prefix "OUTPUT INVALID "
-    #$IPT6 -A INPUT -m state --state INVALID -m limit --limit 7200/h -j LOG --log-prefix "INPUT INVALID "
-    #$IPT6 -A OUTPUT -m state --state INVALID -m limit --limit 7200/h -j LOG --log-prefix "OUTPUT INVALID "
+    #$IPT -A INPUT -m conntrack --ctstate INVALID -m limit --limit 7200/h -j LOG --log-prefix "INPUT INVALID "
+    #$IPT -A OUTPUT -m conntrack --ctstate INVALID -m limit --limit 7200/h -j LOG --log-prefix "OUTPUT INVALID "
+    #$IPT6 -A INPUT -m conntrack --ctstate INVALID -m limit --limit 7200/h -j LOG --log-prefix "INPUT INVALID "
+    #$IPT6 -A OUTPUT -m conntrack --ctstate INVALID -m limit --limit 7200/h -j LOG --log-prefix "OUTPUT INVALID "
 
 ########################### allow forwarding/masquerading ###########################
 
     #$IPT -A FORWARD -o $WORLD -j ACCEPT
-    $IPT -A FORWARD -i $LAN -o $WORLD -m state --state NEW -j ACCEPT
-    $IPT -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A FORWARD -i $LAN -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     #$IPT -t nat -A PREROUTING -j ACCEPT
-    $IPT -t nat -A PREROUTING -i $WORLD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -t nat -A PREROUTING -i $WORLD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     $IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
     #$IPT -t nat -A POSTROUTING -o $WORLD  -s $INTLAN -j SNAT --to-source $GATE
     
-    #$IPT6 -A FORWARD -i $LAN -o $WORLD -m state --state NEW -j ACCEPT
-    $IPT6 -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    #$IPT6 -A FORWARD -i $LAN -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     #$IPT6 -A FORWARD -p icmpv6 -j MY_ICMPv6
 
 ########################### own tables/rules ###########################
@@ -178,25 +178,25 @@ case "$1" in
 ########################### ICMP Tables ###########################
 
 ### MY_ICMP
-    $IPT -A MY_ICMP -p icmp --icmp-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT -A MY_ICMP -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j LOG --log-prefix "icmp-fragmentation-needed: "
-    $IPT -A MY_ICMP -p icmp --icmp-type fragmentation-needed -m state --state RELATED -j ACCEPT
+    $IPT -A MY_ICMP -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT -A MY_ICMP -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "icmp-fragmentation-needed: "
+    $IPT -A MY_ICMP -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     $IPT -A MY_ICMP -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
-    $IPT -A MY_ICMP -p icmp --icmp-type echo-request -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_ICMP -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j LOG --log-prefix "icmp-echo-reply: "
-    $IPT -A MY_ICMP -p icmp --icmp-type echo-reply -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "icmp-echo-reply: "
+    $IPT -A MY_ICMP -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### connection tracking
-    $IPT -A MY_ICMP -m state --state ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_ICMP -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### standard policy    
     $IPT -A MY_ICMP -j DROP
 
 ### MY_ICMPv6
-    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type destination-unreachable -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type packet-too-big -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type time-exceeded -m state --state RELATED -j ACCEPT
-    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type parameter-problem -m state --state RELATED -j ACCEPT
+    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
     $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
     $IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
@@ -233,7 +233,7 @@ case "$1" in
     #$IPT6 -A MY_ICMPv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	$IPT6 -A MY_ICMPv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_ICMPv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### standart policy	
     $IPT6 -A MY_ICMPv6 -j DROP
@@ -243,16 +243,16 @@ case "$1" in
 
 ### all protocols!
 #icmp is already activated above!
-	$IPT -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_TCP -m state --state ESTABLISHED,RELATED -j ACCEPT
-    $IPT -A MY_UDP -m state --state ESTABLISHED,RELATED -j ACCEPT
+	$IPT -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_TCP -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    $IPT -A MY_UDP -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
-	$IPT6 -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-    $IPT6 -A MY_TCPv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
-    $IPT6 -A MY_UDPv6 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    $IPT6 -A MY_TCPv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    $IPT6 -A MY_UDPv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-    #$IPT -A OUTPUT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-    #$IPT6 -A OUTPUT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+    #$IPT -A OUTPUT -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    #$IPT6 -A OUTPUT -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 
 #########################################################################
 ########################### start of services ###########################
@@ -293,36 +293,36 @@ case "$1" in
     $IPT -A MY_TCP -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    $IPT -A MY_TCP -i $WORLD -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "ssh-v4-access: "
-    $IPT -A MY_TCP -i $WORLD -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "ssh-v4-access: "
+    $IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-	$IPT -A MY_TCP -i $LAN -m state --state NEW -p tcp --dport 67 -j LOG --log-prefix "dhcpd-v4-tcp-access: "
-    $IPT -A MY_TCP -i $LAN -m state --state NEW -p tcp --dport 67 -j ACCEPT
+	$IPT -A MY_TCP -i $LAN -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "dhcpd-v4-tcp-access: "
+    $IPT -A MY_TCP -i $LAN -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
 
 ### DNS
-    $IPT -A MY_TCP -i $LAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "dns-v4-tcp-access: "
-    $IPT -A MY_TCP -i $LAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+    $IPT -A MY_TCP -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "dns-v4-tcp-access: "
+    $IPT -A MY_TCP -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### postgresql
-    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m state --state NEW -p tcp --dport 5432 -j LOG --log-prefix "postgres-access: "
-    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m state --state NEW -p tcp --dport 5432 -j ACCEPT
+    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 5432 -j LOG --log-prefix "postgres-access: "
+    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 5432 -j ACCEPT
 
 ### mysql
-    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m state --state NEW -p tcp --dport 3306 -j LOG --log-prefix "mysql-access: "
-    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m state --state NEW -p tcp --dport 3306 -j ACCEPT
+    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 3306 -j LOG --log-prefix "mysql-access: "
+    #$IPT -A MY_TCP -s $INTLAN -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 3306 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT -A MY_TCP -i $WORLD -m state --state NEW -p tcp --dport 9191 -j LOG --log-prefix "transmission-tcp: "
-    #$IPT -A MY_TCP -i $WORLD -m state --state NEW -p tcp --dport 9191 -j ACCEPT
+	#$IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 9191 -j LOG --log-prefix "transmission-tcp: "
+    #$IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 9191 -j ACCEPT
 
 ### IPSEC
     #$IPT -A MY_TCP -i $WORLD -p 50 -j ACCEPT
     #$IPT -A MY_TCP -i $WORLD -p 51 -j ACCEPT
-    #$IPT -A MY_TCP -i $WORLD -m state --state NEW -p udp --dport 500 -j ACCEPT
+    #$IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### Skype
-    #$IPT -A MY_TCP -i $WORLD -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+    #$IPT -A MY_TCP -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
 ### drop rest
     $IPT -A MY_TCP -j DROP
@@ -334,23 +334,23 @@ case "$1" in
 ###
 
 ### DHCPD
-	$IPT -A MY_UDP -i $LAN -m state --state NEW -p udp --dport 67 -j LOG --log-prefix "dhcpd-v4-udp-access: "
-    $IPT -A MY_UDP -i $LAN -m state --state NEW -p udp --dport 67 -j ACCEPT
+	$IPT -A MY_UDP -i $LAN -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "dhcpd-v4-udp-access: "
+    $IPT -A MY_UDP -i $LAN -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
 
 ### DNS
-	$IPT -A MY_UDP -i $LAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "dns-v4-udp-access: "
-    $IPT -A MY_UDP -i $LAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+	$IPT -A MY_UDP -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "dns-v4-udp-access: "
+    $IPT -A MY_UDP -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT -A MY_UDP -i $WORLD -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "transmission-udp: "
-    #$IPT -A MY_UDP -i $WORLD -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT -A MY_UDP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "transmission-udp: "
+    #$IPT -A MY_UDP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### OPENVPN_V2
-    #$IPT -A MY_UDP -i $WORLD -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "openvpn-connection: "
-    #$IPT -A MY_UDP -i $WORLD -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT -A MY_UDP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "openvpn-connection: "
+    #$IPT -A MY_UDP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT -A MY_UDP -i $WORLD -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT -A MY_UDP -i $WORLD -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### drop rest
     $IPT -A MY_UDP -j DROP
@@ -363,36 +363,36 @@ case "$1" in
 ###
 
 ### SSH
-    $IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p tcp --dport 22 -j LOG --log-prefix "ssh-v6-access: "
-    $IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p tcp --dport 22 -j ACCEPT
+    $IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "ssh-v6-access: "
+    $IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPDv6	
-	$IPT6 -A MY_TCPv6 -i $LAN -m state --state NEW -p tcp --dport 547 -j LOG --log-prefix "dhcpd-v6-tcp-access: "
-    $IPT6 -A MY_TCPv6 -i $LAN -m state --state NEW -p tcp --dport 547 -j ACCEPT
+	$IPT6 -A MY_TCPv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "dhcpd-v6-tcp-access: "
+    $IPT6 -A MY_TCPv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
-	$IPT6 -A MY_TCPv6 -i $LAN -m state --state NEW -p tcp --dport 53 -j LOG --log-prefix "dns-v6-tcp-access: "
-    $IPT6 -A MY_TCPv6 -i $LAN -m state --state NEW -p tcp --dport 53 -j ACCEPT
+	$IPT6 -A MY_TCPv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "dns-v6-tcp-access: "
+    $IPT6 -A MY_TCPv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### postgresql
-    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m state --state NEW -p tcp --dport 5432 -j LOG --log-prefix "postgres-access: "
-    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m state --state NEW -p tcp --dport 5432 -j ACCEPT
+    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 5432 -j LOG --log-prefix "postgres-access: "
+    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 5432 -j ACCEPT
 
 ### mysql
-    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m state --state NEW -p tcp --dport 3306 -j LOG --log-prefix "mysql-access: "
-    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m state --state NEW -p tcp --dport 3306 -j ACCEPT
+    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 3306 -j LOG --log-prefix "mysql-access: "
+    #$IPT6 -A MY_TCPv6 -s $INTLAN6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 3306 -j ACCEPT
 
 ### Transmission Torrent
-	#$IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p tcp --dport 9191 -j LOG --log-prefix "transmission-tcp: "
-    #$IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p tcp --dport 9191 -j ACCEPT
+	#$IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 9191 -j LOG --log-prefix "transmission-tcp: "
+    #$IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 9191 -j ACCEPT
 
 ### IPSEC
     #$IPT6 -A MY_TCPv6 -i $WORLD -p 50 -j ACCEPT
     #$IPT6 -A MY_TCPv6 -i $WORLD -p 51 -j ACCEPT
-    #$IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p udp --dport 500 -j ACCEPT
+    #$IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### Skype
-    #$IPT6 -A MY_TCPv6 -i $WORLD -m state --state NEW -p tcp --dport 23103 -j ACCEPT
+    #$IPT6 -A MY_TCPv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
 ### drop rest
     $IPT6 -A MY_TCPv6 -j DROP
@@ -404,23 +404,23 @@ case "$1" in
 ###
 
 ### DHCPDv6
-	$IPT6 -A MY_UDPv6 -i $LAN -m state --state NEW -p udp --dport 547 -j LOG --log-prefix "dhcpd-v6-udp-access: "
-    $IPT6 -A MY_UDPv6 -i $LAN -m state --state NEW -p udp --dport 547 -j ACCEPT
+	$IPT6 -A MY_UDPv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "dhcpd-v6-udp-access: "
+    $IPT6 -A MY_UDPv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
-	$IPT6 -A MY_UDPv6 -i $LAN -m state --state NEW -p udp --dport 53 -j LOG --log-prefix "dns-v6-udp-access: "
-    $IPT6 -A MY_UDPv6 -i $LAN -m state --state NEW -p udp --dport 53 -j ACCEPT
+	$IPT6 -A MY_UDPv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "dns-v6-udp-access: "
+    $IPT6 -A MY_UDPv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
 ### Transmission Torrent
-	#$IPT6 -A MY_UDPv6 -i $WORLD -m state --state NEW -p udp --dport 6969 -j LOG --log-prefix "transmission-udp: "
-    #$IPT6 -A MY_UDPv6 -i $WORLD -m state --state NEW -p udp --dport 6969 -j ACCEPT
+	#$IPT6 -A MY_UDPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "transmission-udp: "
+    #$IPT6 -A MY_UDPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### OPENVPN_V2
-    #$IPT6 -A MY_UDPv6 -i $WORLD -m state --state NEW -p udp --dport 1194 -j LOG --log-prefix "openvpn-connection: "
-    #$IPT6 -A MY_UDPv6 -i $WORLD -m state --state NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT6 -A MY_UDPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "openvpn-connection: "
+    #$IPT6 -A MY_UDPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
-	#$IPT6 -A MY_UDPv6 -i $WORLD -m state --state NEW -p udp --dport 23103 -j ACCEPT
+	#$IPT6 -A MY_UDPv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
 ### drop rest
     $IPT6 -A MY_UDPv6 -j DROP
