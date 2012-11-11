@@ -41,17 +41,21 @@ case "$1" in
 
 ########################### proc-settings ###########################
 
-### ip 4 and 6
+### activate forwarding
     echo 1 > /proc/sys/net/ipv4/ip_forward
     echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
 ### Max. 500/second (5/Jiffie)
-    echo 5 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv6/icmp/ratelimit
 
 ### ram and ram-timing for IP-de/-fragmentation
     echo 262144 > /proc/sys/net/ipv4/ipfrag_high_thresh
     echo 196608 > /proc/sys/net/ipv4/ipfrag_low_thresh
     echo 30 > /proc/sys/net/ipv4/ipfrag_time
+    echo 262144 > /proc/sys/net/ipv6/ip6frag_high_thresh
+    echo 196608 > /proc/sys/net/ipv6/ip6frag_low_thresh
+    echo 30 > /proc/sys/net/ipv6/ip6frag_time
 
 ### TCP-FIN-Timeout protection against DoS-attacks
     echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
@@ -61,6 +65,21 @@ case "$1" in
 
 ### repeat TCP-packets max 15x
     echo 15 > /proc/sys/net/ipv4/tcp_retries2
+    
+### disable source routing
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+	
+### ignore bogus icmp_errors
+	echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+	
+### deactivate source redirects
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_redirects
+	
+### deactivate source route
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 
 ########################### cleanup tables ###########################
 

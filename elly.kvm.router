@@ -39,17 +39,21 @@ case "$1" in
 
 ########################### proc-settings ###########################
 
-### ip 4 and 6
+### activate forwarding
     echo 1 > /proc/sys/net/ipv4/ip_forward
     echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
 ### Max. 500/second (5/Jiffie)
-    echo 5 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv6/icmp/ratelimit
 
 ### ram and ram-timing for IP-de/-fragmentation
     echo 262144 > /proc/sys/net/ipv4/ipfrag_high_thresh
     echo 196608 > /proc/sys/net/ipv4/ipfrag_low_thresh
     echo 30 > /proc/sys/net/ipv4/ipfrag_time
+    echo 262144 > /proc/sys/net/ipv6/ip6frag_high_thresh
+    echo 196608 > /proc/sys/net/ipv6/ip6frag_low_thresh
+    echo 30 > /proc/sys/net/ipv6/ip6frag_time
 
 ### TCP-FIN-Timeout protection against DoS-attacks
     echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
@@ -59,6 +63,21 @@ case "$1" in
 
 ### repeat TCP-packets max 15x
     echo 15 > /proc/sys/net/ipv4/tcp_retries2
+    
+### disable source routing
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+	
+### ignore bogus icmp_errors
+	echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+	
+### deactivate source redirects
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_redirects
+	
+### deactivate source route
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 
 ########################### cleanup tables ###########################
 
@@ -88,37 +107,31 @@ case "$1" in
 
 ### MY_ICMP Chain
     $IPT -N MY_ICMP
-
 ### icmp traffic goes to MY_ICMP 
     $IPT -A INPUT -p icmp -j MY_ICMP
 
 ### MY_TCP
     $IPT -N MY_TCP
-
 ### tcp traffic goes to MY_TCP
     $IPT -A INPUT -p tcp -j MY_TCP
 
 ### MY_UDP
     $IPT -N MY_UDP
-
 ### udp traffic goes to MY_UDP
     $IPT -A INPUT -p udp -j MY_UDP
 
 ### MY_ICMPv6 Chain
     $IPT6 -N MY_ICMPv6
-
 ### icmp IPv6 traffic goes to MY_ICMPv6
     $IPT6 -A INPUT -p icmpv6 -j MY_ICMPv6
 
 ### MY_TCPv6
     $IPT6 -N MY_TCPv6
-
 ### tcp IPv6 traffic goes to MY_TCPv6
     $IPT6 -A INPUT -p tcp -j MY_TCPv6
 
 ### MY_UDPv6
     $IPT6 -N MY_UDPv6
-
 ### udp IPv6 traffic goes to MY_UDPv6
     $IPT6 -A INPUT -p udp -j MY_UDPv6
 
