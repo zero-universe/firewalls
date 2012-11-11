@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# modified 2012.10.14
+# modified 2012.11.11
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
