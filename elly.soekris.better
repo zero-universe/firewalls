@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# last modified 2012.10.29
+# last modified 2012.11.11
 # firewall for soekris net6501-50
 # zero.universe@gmail.com
 #
@@ -21,9 +21,12 @@ LAN="eth1"
 WLAN="eth2"
 KVMS="eth3"
 MOD=$(which modprobe)
-INTLAN="192.168.0.0/24"
-#INTLAN6="fd54:fc9a:8b7a:765e::/64"
-
+LAN_NET="192.168.100.0/24"
+WLAN_NET="192.168.120.0/24"
+KVMS_NET="192.168.200.0/24"
+#LAN_NET6="fd54:fc9a:8b7a:765e::/64"
+#WLAN_NET6="fd55:fc9a:8b7a:765e::/64"
+#KVMS_NET="fd56:fc9a:8b7a:765e::/64"
 
 
 case "$1" in
@@ -47,17 +50,22 @@ case "$1" in
 
 ############################ proc-settings #############################
 
-### ip 4 and 6
+### activate forwarding
     echo 1 > /proc/sys/net/ipv4/ip_forward
     echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
 ### Max. 500/second (5/Jiffie)
-    echo 5 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv6/icmp/ratelimit
 
 ### ram and ram-timing for IP-de/-fragmentation
     echo 262144 > /proc/sys/net/ipv4/ipfrag_high_thresh
     echo 196608 > /proc/sys/net/ipv4/ipfrag_low_thresh
     echo 30 > /proc/sys/net/ipv4/ipfrag_time
+    
+    echo 262144 > /proc/sys/net/ipv6/ip6frag_high_thresh
+    echo 196608 > /proc/sys/net/ipv6/ip6frag_low_thresh
+    echo 30 > /proc/sys/net/ipv6/ip6frag_time
 
 ### TCP-FIN-Timeout protection against DoS-attacks
     echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
@@ -67,6 +75,21 @@ case "$1" in
 
 ### repeat TCP-packets max 15x
     echo 15 > /proc/sys/net/ipv4/tcp_retries2
+    
+### disable source routing
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+	
+### ignore bogus icmp_errors
+	echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+	
+### deactivate source redirects
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_redirects
+	
+### deactivate source route
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 
 ############################ cleanup tables ############################
 
@@ -92,7 +115,7 @@ case "$1" in
     $IPT6 -P OUTPUT ACCEPT
     $IPT6 -P FORWARD DROP
 
-########################### allow forwarding ###########################
+############### allow forwarding for exisitng connections ##############
 
     $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
@@ -115,7 +138,7 @@ case "$1" in
     $IPT -A MY_LOOPYv4 -i lo -j ACCEPT
     $IPT6 -A MY_LOOPYv6 -i lo -j ACCEPT
     
-    # defauzlt policy of OUTPUT is ACCEPT
+    # default policy of OUTPUT is ACCEPT
     #$IPT -A OUTPUT -o lo -j ACCEPT
     #$IPT6 -A OUTPUT -o lo -j ACCEPT
 
@@ -123,27 +146,12 @@ case "$1" in
     	
 ########################## creation of tables ##########################
 
-#
-### nics
-#
-
-### WLAN Chain
-    $IPT -N WLANv4
-    $IPT6 -N WLANv6
-    
-### KVMS Chain
-    $IPT -N KVMSv4
-    $IPT6 -N KVMSv4
 
 ###########################################################################################################################################################################################################
 ######################  nic for Internet:  WORLD  ######################
 ########################################################################
 
 ### ICMP_WORLD
-
-### create WORLD Chain
-    $IPT -N WORLDv4
-    $IPT6 -N WORLDv6
 
 ### create MY_ICMP_WORLD rules
 	$IPT -N MY_ICMP_WORLDv4
@@ -163,6 +171,9 @@ case "$1" in
     $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
     $IPT -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
+### connection tracking
+    $IPT -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### log rest
 	$IPT -A MY_ICMP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 icmp: "
@@ -211,7 +222,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 icmp: "
@@ -231,8 +242,8 @@ case "$1" in
     $IPT -A INPUT -i $WORLD -p tcp -j MY_TCP_WORLDv4
     $IPT6 -A INPUT -i $WORLD -p tcp -j MY_TCP_WORLDv6
     
-    $IPT -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
-    $IPT6 -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
+    $IPT -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
+    $IPT6 -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
 ###  drop stealth scans etc. ###
 
@@ -264,6 +275,10 @@ case "$1" in
     $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
     $IPT6 -A MY_TCP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
 	$IPT6 -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
@@ -304,6 +319,10 @@ case "$1" in
 ### Skype
 	#$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
 	$IPT6 -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
@@ -316,17 +335,15 @@ case "$1" in
 #######################  nic for intranet:  LAN  #######################
 ########################################################################
 
-### LAN Chain
-    $IPT -N LANv4
-    $IPT6 -N LANv6
-    
+### MY_LAN Chain
+
 ### create MY_ICMP_LAN rules
 	$IPT -N MY_ICMP_LANv4
 	$IPT6 -N MY_ICMP_LANv6
 
 ### LAN icmp traffic goes to MY_ICMP_LAN
     $IPT -A INPUT -i $LAN -p icmp -j MY_ICMP_LANv4
-    $IPT6 -A INPUT -i $LAN -p icmp -j MY_ICMP_LANv6
+    $IPT6 -A INPUT -i $LAN -p icmpv6 -j MY_ICMP_LANv6
     
     $IPT -A MY_ICMP_LANv4 -m conntrack --ctstate INVALID -j DROP
     $IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate INVALID -j DROP
@@ -339,6 +356,9 @@ case "$1" in
     $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "LAN_icmp-echo-reply: "
     $IPT -A MY_ICMP_LANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
+### connection tracking
+	$IPT -A MY_ICMP_LANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest 
 	$IPT -A MY_ICMP_LANv4 -j LOG --log-prefix "forbidden from lan v4 icmp: "
 	
@@ -386,7 +406,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_ICMP_LANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_LANv6 -j LOG --log-prefix "forbidden from lan v6 icmp: "
@@ -396,7 +416,7 @@ case "$1" in
     
 #----------------------------------------------------------------------#
     
-### TCP_LAN
+### MY_TCP_LAN
 
 ### create MY_TCP_LAN rules
 	$IPT -N MY_TCP_LANv4
@@ -460,6 +480,10 @@ case "$1" in
 ### Skype
     #$IPT -A MY_TCP_LANv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_TCP_LANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_TCP_LANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_TCP_LANv4 -j LOG --log-prefix "forbidden from lan v4 tcp: "
 	$IPT6 -A MY_TCP_LANv6 -j LOG --log-prefix "forbidden from lan v6 tcp: "
@@ -470,7 +494,7 @@ case "$1" in
 
 #-------------------------------------------------------------------------------------------------------------------#
 
-### UDP_LAN
+### MY_UDP_LAN
 
 ### create MY_UDP_LAN rules
 	$IPT -N MY_UDP_LANv4
@@ -505,15 +529,19 @@ case "$1" in
 	#$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
-    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
+    #$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    $IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
-    $IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
+    #$IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
 	#$IPT -A MY_UDP_LANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_UDP_LANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_UDP_LANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_UDP_LANv4 -j LOG --log-prefix "forbidden from lan v4 udp: "
 	$IPT6 -A MY_UDP_LANv6 -j LOG --log-prefix "forbidden from lan v6 udp: "
@@ -526,9 +554,7 @@ case "$1" in
 ########################  nic for wifi:  WLAN  #########################
 ########################################################################
 
-### WLAN Chain
-    $IPT -N WLANv4
-    $IPT6 -N WLANv6
+### MY_WLAN Chain
     
 ### create MY_ICMP_WLAN rules
 	$IPT -N MY_ICMP_WLANv4
@@ -536,7 +562,7 @@ case "$1" in
 
 ### WLAN icmp traffic goes to MY_ICMP_WLAN
     $IPT -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv4
-    $IPT6 -A INPUT -i $WLAN -p icmp -j MY_ICMP_WLANv6
+    $IPT6 -A INPUT -i $WLAN -p icmpv6 -j MY_ICMP_WLANv6
     
     $IPT -A MY_ICMP_WLANv4 -m conntrack --ctstate INVALID -j DROP
     $IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate INVALID -j DROP
@@ -549,6 +575,9 @@ case "$1" in
     $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "WLAN_icmp-echo-reply: "
     $IPT -A MY_ICMP_WLANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
+### connection tracking
+	$IPT -A MY_ICMP_WLANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest 
 	$IPT -A MY_ICMP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 icmp: "
 	
@@ -596,7 +625,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_ICMP_WLANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 icmp: "
@@ -670,6 +699,10 @@ case "$1" in
 ### Skype
     #$IPT -A MY_TCP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_TCP_WLANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_TCP_WLANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_TCP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 tcp: "
 	$IPT6 -A MY_TCP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 tcp: "
@@ -715,15 +748,19 @@ case "$1" in
 	#$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v4-udp-access: "
-    $IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v4-udp-access: "
+    #$IPT -A MY_UDP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v6-udp-access: "
-    $IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    #$IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "WLAN_openvpn-v6-udp-access: "
+    #$IPT6 -A MY_UDP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### Skype
 	#$IPT -A MY_UDP_WLANv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_UDP_WLANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_UDP_WLANv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_UDP_WLANv4 -j LOG --log-prefix "forbidden from WLAN v4 udp: "
 	$IPT6 -A MY_UDP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 udp: "
@@ -736,9 +773,7 @@ case "$1" in
 #########################  nic for kvms:  KVMS  ########################
 ########################################################################
 
-### KVMS Chain
-    $IPT -N KVMSv4
-    $IPT6 -N KVMSv6
+### MY_KVMS Chain
     
 ### create MY_ICMP_KVMS rules
 	$IPT -N MY_ICMP_KVMSv4
@@ -746,7 +781,7 @@ case "$1" in
 
 ### KVMS icmp traffic goes to MY_ICMP_KVMS
     $IPT -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv4
-    $IPT6 -A INPUT -i $KVMS -p icmp -j MY_ICMP_KVMSv6
+    $IPT6 -A INPUT -i $KVMS -p icmpv6 -j MY_ICMP_KVMSv6
     
     $IPT -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
     $IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
@@ -758,7 +793,10 @@ case "$1" in
     $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
     $IPT -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
+
+### connection tracking
+	$IPT -A MY_ICMP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest 
 	$IPT -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 icmp: "
 	
@@ -806,7 +844,7 @@ case "$1" in
     #$IPT6 -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
-	#$IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_ICMP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	$IPT6 -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 icmp: "
@@ -816,7 +854,7 @@ case "$1" in
     
 #----------------------------------------------------------------------#
     
-### TCP_KVMS
+### MY_TCP_KVMS
 
 ### create MY_TCP_KVMS rules
 	$IPT -N MY_TCP_KVMSv4
@@ -880,6 +918,10 @@ case "$1" in
 ### Skype
     #$IPT -A MY_TCP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p tcp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_TCP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_TCP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 tcp: "
 	$IPT6 -A MY_TCP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 tcp: "
@@ -934,6 +976,10 @@ case "$1" in
 ### Skype
 	#$IPT -A MY_UDP_KVMSv4 -i $xxx -m conntrack --ctstate NEW -p udp --dport 23103 -j ACCEPT
 
+### connection tracking
+	$IPT -A MY_UDP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A MY_UDP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### log rest
 	$IPT -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 udp: "
 	$IPT6 -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 udp: "
@@ -941,3 +987,250 @@ case "$1" in
 ### drop rest
     $IPT -A MY_UDP_KVMSv4 -j DROP
     $IPT6 -A MY_UDP_KVMSv6 -j DROP
+    
+
+    
+###########################################################################################################################################################################################################
+#########################  natting + forwarding  #######################
+########################################################################
+
+
+
+### no need to translate between internal LANs
+    #$IPT -t nat -A POSTROUTING  -s $LAN_NET -d $WLAN_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $LAN_NET -d $WLAN_NET -j ACCEPT
+    
+    #$IPT -t nat -A POSTROUTING  -s $LAN_NET -d $KVMS_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $LAN_NET -d $KVMS_NET -j ACCEPT
+    
+    #$IPT -t nat -A POSTROUTING  -s $WLAN_NET -d $LAN_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $WLAN_NET -d $LAN_NET -j ACCEPT
+    
+    #$IPT -t nat -A POSTROUTING  -s $WLAN_NET -d $KVMS_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $WLAN_NET -d $KVMS_NET -j ACCEPT
+    
+    #$IPT -t nat -A POSTROUTING  -s $KVMS_NET -d $LAN_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $KVMS_NET -d $LAN_NET -j ACCEPT
+    
+    #$IPT -t nat -A POSTROUTING  -s $KVMS_NET -d $WLAN_NET -j ACCEPT
+    #$IPT -t nat -A PREROUTING  -s $KVMS_NET -d $WLAN_NET -j ACCEPT
+    
+############################# masquerading #############################
+
+	$IPT -t nat -A POSTROUTING -o $WORLD -s $LAN_NET  -j MASQUERADE
+	$IPT -t nat -A POSTROUTING -o $WORLD -s $WLAN_NET -j MASQUERADE
+	$IPT -t nat -A POSTROUTING -o $WORLD -s $KVMS_NET -j MASQUERADE
+    
+############################## forwarding ##############################    
+    
+### MY_ICMP_WORLD, MY_TCP_WORLD, MY_UDP_WORLD
+    #$IPT -A FORWARD -i $WORLD -s $LAN -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT -A FORWARD -i $WORLD -s $WLAN -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT -A FORWARD -i $WORLD -s $KVMS -m conntrack --ctstate NEW -j ACCEPT
+    
+    #$IPT6 -A FORWARD -i $WORLD -s $LAN -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT6 -A FORWARD -i $WORLD -p tcp -j MY_TCP_WORLDv6
+    #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
+
+### lan -> wlan
+    $IPT -A FORWARD -i $LAN -o $WLAN -p icmp -j MY_ICMP_WLANv4
+    $IPT -A FORWARD -i $LAN -o $WLAN -p tcp -j MY_TCP_WLANv4
+    $IPT -A FORWARD -i $LAN -o $WLAN -p udp -j MY_UDP_WLANv4
+    
+    $IPT6 -A FORWARD -i $LAN -o $WLAN -p icmpv6 -j MY_ICMP_WLANv6
+    $IPT6 -A FORWARD -i $LAN -o $WLAN -p tcp -j MY_TCP_WLANv6
+    $IPT6 -A FORWARD -i $LAN -o $WLAN -p udp -j MY_UDP_WLANv6
+
+### lan -> kvms
+    $IPT -A FORWARD -i $LAN -o $KVMS -p icmp -j MY_ICMP_KVMSv4
+    $IPT -A FORWARD -i $LAN -o $KVMS -p tcp -j MY_TCP_KVMSv4
+    $IPT -A FORWARD -i $LAN -o $KVMS -p udp -j MY_UDP_KVMSv4
+    
+    $IPT6 -A FORWARD -i $LAN -o $KVMS -p icmpv6 -j MY_ICMP_KVMSv6
+    $IPT6 -A FORWARD -i $LAN -o $KVMS -p tcp -j MY_TCP_KVMSv6
+    $IPT6 -A FORWARD -i $LAN -o $KVMS -p udp -j MY_UDP_KVMSv6
+    
+### wlan -> lan
+    $IPT -A FORWARD -i $WLAN -o $LAN -p icmp -j MY_ICMP_LANv4
+    $IPT -A FORWARD -i $WLAN -o $LAN -p tcp -j MY_TCP_LANv4
+    $IPT -A FORWARD -i $WLAN -o $LAN -p udp -j MY_UDP_LANv4
+    
+    $IPT6 -A FORWARD -i $WLAN -o $LAN -p icmpv6 -j MY_ICMP_LANv6
+    $IPT6 -A FORWARD -i $WLAN -o $LAN -p tcp -j MY_TCP_LANv6
+    $IPT6 -A FORWARD -i $WLAN -o $LAN -p udp -j MY_UDP_LANv6
+    
+### wlan -> kvms 
+    $IPT -A FORWARD -i $WLAN -o $KVMS -p icmp -j MY_ICMP_KVMSv4
+    $IPT -A FORWARD -i $WLAN -o $KVMS -p tcp -j MY_TCP_KVMSv4
+    $IPT -A FORWARD -i $WLAN -o $KVMS -p udp -j MY_UDP_KVMSv4
+    
+    $IPT6 -A FORWARD -i $WLAN -o $KVMS -p icmpv6 -j MY_ICMP_KVMSv6
+    $IPT6 -A FORWARD -i $WLAN -o $KVMS -p tcp -j MY_TCP_KVMSv6
+    $IPT6 -A FORWARD -i $WLAN -o $KVMS -p udp -j MY_UDP_KVMSv6
+    
+### kvms -> lan
+    $IPT -A FORWARD -i $KVMS -o $LAN -p icmp -j MY_ICMP_LANv4
+    $IPT -A FORWARD -i $KVMS -o $LAN -p tcp -j MY_TCP_LANv4
+    $IPT -A FORWARD -i $KVMS -o $LAN -p udp -j MY_UDP_LANv4
+    
+    $IPT6 -A FORWARD -i $KVMS -o $LAN -p icmpv6 -j MY_ICMP_LANv6
+    $IPT6 -A FORWARD -i $KVMS -o $LAN -p tcp -j MY_TCP_LANv6
+    $IPT6 -A FORWARD -i $KVMS -o $LAN -p udp -j MY_UDP_LANv6
+    
+### kvms -> wlan
+    $IPT -A FORWARD -i $KVMS -o $WLAN -p icmp -j MY_ICMP_WLANv4
+    $IPT -A FORWARD -i $KVMS -o $WLAN -p tcp -j MY_TCP_WLANv4
+    $IPT -A FORWARD -i $KVMS -o $WLAN -p udp -j MY_UDP_WLANv4
+    
+    $IPT6 -A FORWARD -i $KVMS -o $WLAN -p icmpv6 -j MY_ICMP_WLANv6
+    $IPT6 -A FORWARD -i $KVMS -o $WLAN -p tcp -j MY_TCP_WLANv6
+    $IPT6 -A FORWARD -i $KVMS -o $WLAN -p udp -j MY_UDP_WLANv6
+
+
+########################################################################
+######################## end of rules ##################################
+########################################################################
+
+	;;
+	
+  stop)
+  
+  echo "stopping firewall"
+
+  echo "stopping firewall"
+### table flushen
+    $IPT -F
+    $IPT -t nat -F
+    $IPT -t mangle -F
+    
+### WORLD
+	$IPT -F MY_ICMP_WORLDv4
+	$IPT -X MY_ICMP_WORLDv4
+	
+    $IPT6 -F MY_ICMP_WORLDv6
+    $IPT6 -X MY_ICMP_WORLDv6
+    
+    $IPT -F MY_TCP_WORLDv4
+    $IPT -X MY_TCP_WORLDv4
+    
+    $IPT6 -F MY_TCP_WORLDv6
+    $IPT6 -X MY_TCP_WORLDv6
+    
+    $IPT -F MY_UDP_WORLDv4
+    $IPT -X MY_UDP_WORLDv4
+    
+    $IPT6 -F MY_UDP_WORLDv6
+    $IPT6 -X MY_UDP_WORLDv6
+    
+### LAN
+	$IPT -F MY_ICMP_LANv4
+	$IPT -X MY_ICMP_LANv4
+	
+    $IPT6 -F MY_ICMP_LANv6
+    $IPT6 -X MY_ICMP_LANv6
+    
+    $IPT -F MY_TCP_LANv4
+    $IPT -X MY_TCP_LANv4
+    
+    $IPT6 -F MY_TCP_LANv6
+    $IPT6 -X MY_TCP_LANv6
+    
+    $IPT -F MY_UDP_LANv4
+    $IPT -X MY_UDP_LANv4
+    
+    $IPT6 -F MY_UDP_LANv6
+    $IPT6 -X MY_UDP_LANv6
+    
+### WLAN
+    $IPT -F MY_ICMP_WLANv4
+	$IPT -X MY_ICMP_WLANv4
+	
+    $IPT6 -F MY_ICMP_WLANv6
+    $IPT6 -X MY_ICMP_WLANv6
+    
+    $IPT -F MY_TCP_WLANv4
+    $IPT -X MY_TCP_WLANv4
+    
+    $IPT6 -F MY_TCP_WLANv6
+    $IPT6 -X MY_TCP_WLANv6
+    
+    $IPT -F MY_UDP_WLANv4
+    $IPT -X MY_UDP_WLANv4
+    
+    $IPT6 -F MY_UDP_WLANv6
+    $IPT6 -X MY_UDP_WLANv6
+    
+### KVMS
+	$IPT -F MY_ICMP_KVMSv4
+	$IPT -X MY_ICMP_KVMSv4
+	
+    $IPT6 -F MY_ICMP_KVMSv6
+    $IPT6 -X MY_ICMP_KVMSv6
+    
+    $IPT -F MY_TCP_KVMSv4
+    $IPT -X MY_TCP_KVMSv4
+    
+    $IPT6 -F MY_TCP_KVMSv6
+    $IPT6 -X MY_TCP_KVMSv6
+    
+    $IPT -F MY_UDP_KVMSv4
+    $IPT -X MY_UDP_KVMSv4
+    
+    $IPT6 -F MY_UDP_KVMSv6
+    $IPT6 -X MY_UDP_KVMSv6
+    
+    $IPT -X
+    $IPT6 -X
+    
+    $IPT -t nat -X
+    
+    $IPT -t mangle -X
+	$IPT6 -t mangle -X
+    
+### deactivate ip 4+6 forwarding
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+    echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
+
+### IPv6 Default-Policies setzen
+    $IPT -P INPUT ACCEPT
+    $IPT -P OUTPUT ACCEPT
+    $IPT -P FORWARD ACCEPT
+
+    $IPT6 -P INPUT ACCEPT
+    $IPT6 -P OUTPUT ACCEPT
+    $IPT6 -P FORWARD ACCEPT
+
+    echo "firewall stopped"
+
+  ;;
+
+
+   status)
+
+    echo "table filter"
+    $IPT -L -vn
+    echo "table nat"
+    $IPT -t nat -L -vn
+    echo "table mangle"
+    $IPT -t mangle -L -vn
+
+    echo "table filter"
+    $IPT6 -L -vn
+    echo "table mangle"
+    $IPT6 -t mangle -L -vn
+
+   ;;
+
+########################### usage of script ###########################
+
+   *)
+    echo "Fehlerhafter Aufruf"
+    echo "Syntax: $0 {start|stop|status}"
+
+    exit 1
+
+    ;;
+
+esac
+
+exit 0
