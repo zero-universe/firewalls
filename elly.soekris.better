@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# last modified 2012.12.15
+# last modified 2012.12.19
 # firewall for soekris net6501-50
 # zero.universe@gmail.com
 #
@@ -22,11 +22,11 @@ WLAN="eth2"
 KVMS="eth3"
 MOD=$(which modprobe)
 LAN_NET="192.168.77.0/24"
-WLAN_NET="192.168.88.0/24"
-KVMS_NET="192.168.99.0/24"
 LAN_NET6="fd54:fc9a:8b7a:765e::/64"
+WLAN_NET="192.168.88.0/24"
 WLAN_NET6="fd55:fc9a:8b7a:765e::/64"
-KVMS_NET="fd56:fc9a:8b7a:765e::/64"
+KVMS_NET="192.168.99.0/24"
+KVMS_NET6="fd56:fc9a:8b7a:765e::/64"
 
 
 case "$1" in
@@ -310,7 +310,7 @@ case "$1" in
 
 ### OPENVPN_V2
     #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
-    #$IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    $IPT -A MY_UDP_WORLDv4 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
     #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v6-udp-access: "
     #$IPT6 -A MY_UDP_WORLDv6 -i $WORLD -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
@@ -486,9 +486,9 @@ case "$1" in
     $IPT -A MY_TCP_LANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
     
 #	$IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j LOG --log-prefix "lan_polipo-v6-tcp-access: "
-    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j ACCEPT
+#   $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j ACCEPT
 #   $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "lan_tor-v4-tcp-access: "
-    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
+#    $IPT6 -A MY_TCP_LANv6 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
     
 ### IPSEC
     #$IPT -A MY_TCP_LANv4 -i $LAN -p 50 -j ACCEPT
@@ -554,7 +554,7 @@ case "$1" in
 
 ### OPENVPN_V2
     #$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
-    #$IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    $IPT -A MY_UDP_LANv4 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
     #$IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
     #$IPT6 -A MY_UDP_LANv6 -i $LAN -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
@@ -717,10 +717,10 @@ case "$1" in
     $IPT6 -A MY_TCP_WLANv6 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
 ### TOR + POLIPO
-#	$IPT -A MY_TCP_WLANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j LOG --log-prefix "wlan_tpolipo-v4-tcp-access: "
-    $IPT -A MY_TCP_WLANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j ACCEPT
-#   $IPT -A MY_TCP_WLANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9061 -j LOG --log-prefix "wlan_tor-v4-tcp-access: "
-    $IPT -A MY_TCP_WLANv4 -i $LAN -m conntrack --ctstate NEW -p tcp --dport 9061 -j ACCEPT
+#	$IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j LOG --log-prefix "wlan_tpolipo-v4-tcp-access: "
+#   $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 8123 -j ACCEPT
+#   $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 9061 -j LOG --log-prefix "wlan_tor-v4-tcp-access: "
+    $IPT -A MY_TCP_WLANv4 -i $WLAN -m conntrack --ctstate NEW -p tcp --dport 9061 -j ACCEPT
 
 ### IPSEC
     #$IPT -A MY_TCP_WLANv4 -i $WLAN -p 50 -j ACCEPT
