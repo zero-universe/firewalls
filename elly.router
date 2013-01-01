@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# 2012.11.11
-# firewall for virtual-router
+# modified 2013.01.01
 # zero.universe@gmail.com
 #
-# iptables rules for a router
+# iptables for a virtual-router
 #
 
 ########################### definitions ###########################
