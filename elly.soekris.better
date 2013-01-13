@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# last modified 2012.12.19
+# last modified 2013.01.13
 # firewall for soekris net6501-50
 # zero.universe@gmail.com
 #
@@ -119,8 +119,8 @@ case "$1" in
 
 ############### allow forwarding for exisitng connections ##############
 
-    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ###################### allow loopback networking #######################
 
@@ -1065,6 +1065,11 @@ case "$1" in
     #$IPT6 -A FORWARD -i $WORLD -p tcp -j MY_TCP_WORLDv6
     #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
 
+### world -> openvpn
+	$IPT -A FORWARD -i $WORLD -o $OVPN -p icmp -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -i $WORLD -o $OVPN -p tcp -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -i $WORLD -o $OVPN -p udp -m conntrack --ctstate NEW -j ACCEPT
+
 ### lan -> world
 	$IPT -A FORWARD -i $LAN -o $WORLD -p icmp -m conntrack --ctstate NEW -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -p tcp -m conntrack --ctstate NEW -j ACCEPT
@@ -1123,12 +1128,26 @@ case "$1" in
 	$IPT6 -A FORWARD -i $KVMS -o $WORLD -p icmpv6 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -i $KVMS -o $WORLD -p tcp -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -i $KVMS -o $WORLD -p udp -m conntrack --ctstate NEW -j ACCEPT
+
+### kvms -> lan
+	$IPT -A FORWARD -i $KVMS -o $LAN -p icmp -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -i $KVMS -o $LAN -p tcp -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -i $KVMS -o $LAN -p udp -m conntrack --ctstate NEW -j ACCEPT
 	
+	$IPT6 -A FORWARD -i $KVMS -o $LAN -p icmpv6 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -i $KVMS -o $LAN -p tcp -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -i $KVMS -o $LAN -p udp -m conntrack --ctstate NEW -j ACCEPT
+		
 ### ovpn -> lan
 	$IPT -A FORWARD -i $OVPN -o $LAN -p icmp -m conntrack --ctstate NEW -j ACCEPT
 	$IPT -A FORWARD -i $OVPN -o $LAN -p tcp -m conntrack --ctstate NEW -j ACCEPT
 	$IPT -A FORWARD -i $OVPN -o $LAN -p udp -m conntrack --ctstate NEW -j ACCEPT	
-	
+
+############### allow forwarding for exisitng connections ##############
+
+    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    	
 ########################################################################
 		
 ### lan -> wlan
