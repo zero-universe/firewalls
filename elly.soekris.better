@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# last modified 2013.01.13
+# last modified 2013.03.05
 # firewall for soekris net6501-50
 # zero.universe@gmail.com
 #
@@ -1021,11 +1021,9 @@ case "$1" in
     $IPT6 -A MY_UDP_KVMSv6 -j DROP
     
 
-    
 ###########################################################################################################################################################################################################
 #########################  natting + forwarding  #######################
 ########################################################################
-
 
 
 ### no need to translate between internal LANs
@@ -1145,8 +1143,8 @@ case "$1" in
 
 ############### allow forwarding for exisitng connections ##############
 
-    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     	
 ########################################################################
 		

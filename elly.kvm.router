@@ -1,6 +1,6 @@
-#!/bin/bash -x
+#!/bin/bash
 
-# modified 2013.01.13
+# modified 2013.03.05
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -23,7 +23,7 @@ INTLAN="192.168.77.0/24"
 INTLAN6="fd54:fc9a:8b7a:765e::/64"
 KVMS_NET="192.168.99.0/24"
 KVMS_NET6="fd56:fc9a:8b7a:765e::/64"
-
+OVPN="tun0"
 
 case "$1" in
   start)
@@ -567,7 +567,7 @@ case "$1" in
     
 ############################# masquerading #############################
 
-	#$IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
+	$IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $KVMS -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $LAN_NET  -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $WLAN_NET -j MASQUERADE
@@ -585,14 +585,12 @@ case "$1" in
     #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
 
 ### world -> kvms 
+	$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
+	$IPT6 -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
+    
+### kvms -> world
 	$IPT -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
-    $IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
-    $IPT6 -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
-    $IPT6 -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
-
-### kvms -> kvms
-    $IPT -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
-    $IPT6 -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
+	$IPT6 -A FORWARD -i $KVMS -o $WORLD -j ACCEPT    
 
 ### world -> kvms 
     #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
@@ -613,13 +611,12 @@ case "$1" in
 
 ############### allow forwarding for exisitng connections ##############
 
-    $IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    $IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    #$IPT6 -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ########################################################################
 ######################## end of rules ##################################
 ########################################################################
-
 
 	;;
 	
