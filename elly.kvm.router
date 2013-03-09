@@ -1,6 +1,6 @@
-#!/bin/bash -x
+#!/bin/bash
 
-# modified 2013.01.13
+# modified 2013.03.09
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -15,6 +15,7 @@ IPT=$(which iptables)
 IPT6=$(which ip6tables)
 WORLD="net0"
 KVMS="br0"
+OVPN="tun0"
 # if kvm
 #VM0="virbr0"
 #VM1="virbr1"
@@ -594,6 +595,10 @@ case "$1" in
     $IPT -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
     $IPT6 -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
 
+### lan -> openvpn
+	$IPT -A FORWARD -o $OVPN -j ACCEPT
+	$IPT6 -A FORWARD -o $OVPN -j ACCEPT
+	
 ### world -> kvms 
     #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
     #    
