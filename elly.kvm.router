@@ -13,7 +13,7 @@
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
-WORLD="net0"
+WORLD="enp6s0"
 KVMS="br0"
 OVPN="tun0"
 # if kvm
