@@ -461,7 +461,7 @@
       <ServiceGroup id="id1599X10711" name="TagServices" comment="" ro="False"/>
     </ServiceGroup>
     <ObjectGroup id="id1600X10711" name="Firewalls" comment="" ro="False">
-      <Firewall id="id4090X10711" host_OS="linux24" inactive="False" lastCompiled="0" lastInstalled="0" lastModified="1365496585" platform="iptables" version="" name="elly.easybox803" comment="This firewall has three interfaces. Eth0 faces outside and has a static routable address; eth1 faces inside; eth2 is connected to DMZ subnet.&#10;Policy includes basic rules to permit unrestricted outbound access and anti-spoofing rules. Access to the firewall is permitted only from internal network and only using SSH. The firewall uses one of the machines on internal network for DNS. Internal network is configured with address 192.168.1.0/255.255.255.0, DMZ is 192.168.2.0/255.255.255.0. Since DMZ used private IP address, it needs NAT. There is a mail relay host located on DMZ (object 'server on dmz'). Policy rules permit SMTP connections to it from the Internet and allow this server to connect to a host on internal network 'internal server'. All other access from DMZ to internal net is denied. To provide access to the mail relay its private address is mapped to firewall's outside interface address by NAT rule #1." ro="False">
+      <Firewall id="id4090X10711" host_OS="linux24" inactive="False" lastCompiled="0" lastInstalled="0" lastModified="1365499204" platform="iptables" version="" name="elly.easybox803" comment="This firewall has three interfaces. Eth0 faces outside and has a static routable address; eth1 faces inside; eth2 is connected to DMZ subnet.&#10;Policy includes basic rules to permit unrestricted outbound access and anti-spoofing rules. Access to the firewall is permitted only from internal network and only using SSH. The firewall uses one of the machines on internal network for DNS. Internal network is configured with address 192.168.1.0/255.255.255.0, DMZ is 192.168.2.0/255.255.255.0. Since DMZ used private IP address, it needs NAT. There is a mail relay host located on DMZ (object 'server on dmz'). Policy rules permit SMTP connections to it from the Internet and allow this server to connect to a host on internal network 'internal server'. All other access from DMZ to internal net is denied. To provide access to the mail relay its private address is mapped to firewall's outside interface address by NAT rule #1." ro="False">
         <NAT id="id4115X10711" name="NAT" comment="" ro="False" ipv4_rule_set="False" ipv6_rule_set="False" top_rule_set="True">
           <NATRule id="id4117X10711" disabled="False" group="" position="0" action="Translate" comment="no need to translate&#10;between DMZ and &#10;internal net">
             <OSrc neg="False">
@@ -866,7 +866,7 @@
           <InterfaceOptions/>
         </Interface>
         <Interface id="id5144X10711" dedicated_failover="False" dyn="False" label="KVMS" mgmt="False" security_level="0" unnum="False" unprotected="False" name="eth3" comment="" ro="False">
-          <IPv4 id="id5182X10711" name="elly.easybox803:eth3:ip" comment="" ro="False" address="192.168.99.254" netmask="255.255.255.0"/>
+          <IPv4 id="id5182X10711" name="elly.easybox803:eth3:ipv4" comment="" ro="False" address="192.168.99.254" netmask="255.255.255.0"/>
           <InterfaceOptions>
             <Option name="type">ethernet</Option>
           </InterfaceOptions>
