@@ -981,8 +981,8 @@ case "$1" in
     
 ############################# masquerading #############################
 
-	$IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
-	$IPT -t nat -A POSTROUTING -o $KVMS -j MASQUERADE
+	#$IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
+	#$IPT -t nat -A POSTROUTING -o $KVMS -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $LAN_NET  -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $WLAN_NET -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $KVMS_NET -j MASQUERADE
@@ -999,24 +999,24 @@ case "$1" in
     #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
 
 ### world <-> kvms 
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
-    #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
+	#$IPT -A FORWARD -i $KVMS -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT6 -A FORWARD -i $KVMS -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms <-> kvms
-    $IPT -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
-    $IPT6 -A FORWARD -i $KVMS -o $KVMS -j ACCEPT
+    #$IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+    #$IPT6 -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
 
 ### -> openvpn
-	$IPT -A FORWARD -o $OVPN -j ACCEPT
-	$IPT6 -A FORWARD -o $OVPN -j ACCEPT
+	$IPT -A FORWARD -o $OVPN -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -o $OVPN -m conntrack --ctstate NEW -j ACCEPT
 	
 ### isoly <-> kvms
-	#$IPT -A FORWARD -i $ISOLY -o $KVMS -j ACCEPT
-    #$IPT -A FORWARD -i $KVMS -o $ISOLY -j ACCEPT
-    #$IPT6 -A FORWARD -i $ISOLY -o $KVMS -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $ISOLY -j ACCEPT
+	$IPT -A FORWARD -i $ISOLY -o $KVMS -s $ISOLYNET -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -i $KVMS -o $ISOLY -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -i $ISOLY -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -i $KVMS -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 	
 ### world -> kvms 
     #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
