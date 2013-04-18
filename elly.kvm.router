@@ -989,24 +989,16 @@ case "$1" in
     
 ############################## forwarding ##############################    
     
-### MY_ICMP_WORLD, MY_TCP_WORLD, MY_UDP_WORLD
-    #$IPT -A FORWARD -i $WORLD -s $LAN -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT -A FORWARD -i $WORLD -s $WLAN -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT -A FORWARD -i $WORLD -s $KVMS -m conntrack --ctstate NEW -j ACCEPT
-    
-    #$IPT6 -A FORWARD -i $WORLD -s $LAN -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -p tcp -j MY_TCP_WORLDv6
-    #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
 
 ### world <-> kvms 
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms <-> kvms
-    #$IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
+    $IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+    $IPT6 -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
 
 ### -> openvpn
 	$IPT -A FORWARD -o $OVPN -m conntrack --ctstate NEW -j ACCEPT
@@ -1018,22 +1010,6 @@ case "$1" in
     $IPT6 -A FORWARD -i $ISOLY -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
     $IPT6 -A FORWARD -i $KVMS -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 	
-### world -> kvms 
-    #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
-    #    
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -p icmpv6 -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -p tcp -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -p udp -m conntrack --ctstate NEW -j ACCEPT
-    
-### kvms -> world
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -p icmp -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -p tcp -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -p udp -m conntrack --ctstate NEW -j ACCEPT
-	
-	#$IPT6 -A FORWARD -i $KVMS -o $WORLD -p icmpv6 -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $KVMS -o $WORLD -p tcp -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $KVMS -o $WORLD -p udp -m conntrack --ctstate NEW -j ACCEPT
-
 
 ############### allow forwarding for exisitng connections ##############
 
