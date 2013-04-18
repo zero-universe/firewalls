@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# modified 2013.03.09
+# modified 2013.04.18
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -16,7 +16,6 @@ IPT6=$(which ip6tables)
 WORLD="enp6s0"
 KVMS="br0"
 OVPN="tun0"
-# if kvm
 #VM0="virbr0"
 #VM1="virbr1"
 MOD=$(which modprobe)
@@ -114,9 +113,6 @@ case "$1" in
 
 ###################### allow loopback networking #######################
 
-#
-### IPv4
-#
 
 ### MY_LOOPY Chain
     $IPT -N MY_LOOPYv4
@@ -129,9 +125,6 @@ case "$1" in
     $IPT -A MY_LOOPYv4 -i lo -j ACCEPT
     $IPT6 -A MY_LOOPYv6 -i lo -j ACCEPT
     
-    # default policy of OUTPUT is ACCEPT
-    #$IPT -A OUTPUT -o lo -j ACCEPT
-    #$IPT6 -A OUTPUT -o lo -j ACCEPT
 
 #----------------------------------------------------------------------#
 
