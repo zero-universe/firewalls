@@ -25,6 +25,7 @@ KVMSNET="192.168.99.0/24"
 KVMSNET6="fd56:fc9a:8b7a:765e::/64"
 ISOLYNET="192.168.133.0/24"
 NATNET="192.168.122.0/24"
+WlANNET="192.168.88.0/24"
 
 case "$1" in
   start)
@@ -996,9 +997,8 @@ case "$1" in
     $IPT6 -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
     $IPT6 -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 
-### kvms <-> wlan
-    #$IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
+### kvms -> wlan
+    $IPT -A FORWARD -o $KVMS -s $KVMS -d $WLANNET -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms <-> kvms
     $IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
