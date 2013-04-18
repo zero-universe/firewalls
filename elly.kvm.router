@@ -16,8 +16,8 @@ IPT6=$(which ip6tables)
 WORLD="enp6s0"
 KVMS="br0"
 OVPN="tun0"
-#VM0="virbr0"
-#VM1="virbr1"
+VM0="virbr0"
+VM1="virbr1"
 MOD=$(which modprobe)
 INTLAN="192.168.77.0/24"
 INTLAN6="fd54:fc9a:8b7a:765e::/64"
@@ -739,7 +739,7 @@ case "$1" in
     #$IPT6 -A FORWARD -i $WORLD -p tcp -j MY_TCP_WORLDv6
     #$IPT6 -A FORWARD -i $WORLD -p udp -j MY_UDP_WORLDv6
 
-### world -> kvms 
+### world <-> kvms 
 	$IPT -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
     $IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
     $IPT6 -A FORWARD -i $KVMS -o $WORLD -j ACCEPT
@@ -752,6 +752,18 @@ case "$1" in
 ### lan -> openvpn
 	$IPT -A FORWARD -o $OVPN -j ACCEPT
 	$IPT6 -A FORWARD -o $OVPN -j ACCEPT
+	
+### vm1 <-> world
+	$IPT -A FORWARD -i $VM1 -o $WORLD -j ACCEPT
+    $IPT -A FORWARD -i $WORLD -o $VM1 -j ACCEPT
+    $IPT6 -A FORWARD -i $VM1 -o $WORLD -j ACCEPT
+    $IPT6 -A FORWARD -i $WORLD -o $VM1 -j ACCEPT
+	
+### vm1 <-> kvms
+	$IPT -A FORWARD -i $VM1 -o $KVMS -j ACCEPT
+    $IPT -A FORWARD -i $KVMS -o $VM1 -j ACCEPT
+    $IPT6 -A FORWARD -i $VM1 -o $KVMS -j ACCEPT
+    $IPT6 -A FORWARD -i $KVMS -o $VM1 -j ACCEPT
 	
 ### world -> kvms 
     #$IPT -A FORWARD -i $WORLD -o $KVMS -j ACCEPT
