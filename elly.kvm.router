@@ -992,6 +992,10 @@ case "$1" in
     
 ### nics: world, kvms, ovpn, nat, isoly
 
+### -> kvms 
+	$IPT -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
+
 ### world -> kvms 
 	#$IPT -A FORWARD -i $WORLD -o $KVMS -s $INTLAN -m conntrack --ctstate NEW -j ACCEPT
 	#$IPT6 -A FORWARD -i $WORLD -o $KVMS -s $INTLAN6 -m conntrack --ctstate NEW -j ACCEPT
