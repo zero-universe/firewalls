@@ -1000,6 +1000,10 @@ case "$1" in
 	$IPT -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 
+### -> ovpn
+	$IPT -A FORWARD -o $OVPN -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -o $OVPN -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
+	
 ### world -> kvms 
 	#$IPT -A FORWARD -i $WORLD -o $KVMS -s $INTLAN -m conntrack --ctstate NEW -j ACCEPT
 	#$IPT6 -A FORWARD -i $WORLD -o $KVMS -s $INTLAN6 -m conntrack --ctstate NEW -j ACCEPT
