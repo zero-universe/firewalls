@@ -956,29 +956,9 @@ case "$1" in
     $IPT6 -A MY_UDP_ISOLYv6 -j DROP
     
 
-###########################################################################################################################################################################################################
-############################  natting  #################################
+########################################################################
 ########################################################################
 
-
-### no need to translate between internal LANs
-    #$IPT -t nat -A POSTROUTING  -s $LAN_NET -d $WLAN_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $LAN_NET -d $WLAN_NET -j ACCEPT
-    
-    #$IPT -t nat -A POSTROUTING  -s $LAN_NET -d $KVMS_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $LAN_NET -d $KVMS_NET -j ACCEPT
-    
-    #$IPT -t nat -A POSTROUTING  -s $WLAN_NET -d $LAN_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $WLAN_NET -d $LAN_NET -j ACCEPT
-    
-    #$IPT -t nat -A POSTROUTING  -s $WLAN_NET -d $KVMS_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $WLAN_NET -d $KVMS_NET -j ACCEPT
-    
-    #$IPT -t nat -A POSTROUTING  -s $KVMS_NET -d $LAN_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $KVMS_NET -d $LAN_NET -j ACCEPT
-    
-    #$IPT -t nat -A POSTROUTING  -s $KVMS_NET -d $WLAN_NET -j ACCEPT
-    #$IPT -t nat -A PREROUTING  -s $KVMS_NET -d $WLAN_NET -j ACCEPT
     
 ############################# masquerading #############################
 
@@ -992,6 +972,9 @@ case "$1" in
     
 ### nics: world, kvms, ovpn, nat, isoly
 
+### nat -> world
+	$IPT -A FORWARD -o $WORLD -s $NATNET -m conntrack --ctstate NEW -j ACCEPT
+
 ### -> kvms 
 	$IPT -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
@@ -999,68 +982,6 @@ case "$1" in
 ### -> isoly
 	$IPT -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
-
-### -> ovpn
-	$IPT -A FORWARD -o $OVPN -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-	$IPT6 -A FORWARD -o $OVPN -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
-	
-### world -> kvms 
-	#$IPT -A FORWARD -i $WORLD -o $KVMS -s $INTLAN -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $WORLD -o $KVMS -s $INTLAN6 -m conntrack --ctstate NEW -j ACCEPT
-	
-### world -> ovpn
-	#$IPT -A FORWARD -i $WORLD -o $OVPN -s $INTLAN -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $OVPN -s $INTLAN6 -m conntrack --ctstate NEW -j ACCEPT
-    
-### world -> nat
-	#$IPT -A FORWARD -i $WORLD -o $NAT -s $INTLAN -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $NAT -s $INTLAN6 -m conntrack --ctstate NEW -j ACCEPT
-    
-### kvms -> world
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
-
-### kvms -> ovpn
-	#$IPT -A FORWARD -i $KVMS -o $OVPN -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $KVMS -o $OVPN -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
-	
-### kvms -> isoly
-	#$IPT -A FORWARD -i $KVMS -o $ISOLY -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -i $KVMS -o $ISOLY -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
-	
-### ovpn -> world
-	#$IPT -A FORWARD -i $OVPN -o $WORLD -m conntrack --ctstate NEW -j ACCEPT
-	
-### nat -> world
-	$IPT -A FORWARD -o $WORLD -s $NATNET -m conntrack --ctstate NEW -j ACCEPT
-
-## !!old entries
-### world <-> kvms 
-	#$IPT -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $WORLD -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $WORLD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
-
-### world <-> nat
-	#$IPT -A FORWARD -i $NAT -o $WORLD -s $NATNET -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT -A FORWARD -i $WORLD -o $NAT -m conntrack --ctstate NEW -j ACCEPT
-
-### -> ovpn
-	#$IPT -A FORWARD -o $OVPN -m conntrack --ctstate NEW -j ACCEPT
-	#$IPT6 -A FORWARD -o $OVPN -m conntrack --ctstate NEW -j ACCEPT
-	
-### kvms -> ovpn
-    #$IPT -A FORWARD -o $OVPN -s $KVMS -m conntrack --ctstate NEW -j ACCEPT
-
-### kvms <-> kvms
-    #$IPT -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $KVMS -s $KVMSNET6 -m conntrack --ctstate NEW -j ACCEPT
-
-### isoly <-> kvms
-	#$IPT -A FORWARD -i $ISOLY -o $KVMS -s $ISOLYNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT -A FORWARD -i $KVMS -o $ISOLY -s $KVMSNET -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $ISOLY -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
-    #$IPT6 -A FORWARD -i $KVMS -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
 	
 
 ############### allow forwarding for exisitng connections ##############
