@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# modified 2013.04.19
+# modified 2013.04.25
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -10,6 +10,10 @@
 
 # WORLD =	Internet nic
 # KVMS	=	KVM nic (bridged)
+# OVPN	=	vpn tunnel first nic
+# NAT	=	natted vm
+# ISOLY	=	isolated vm
+# VMGW	=	gateway for ISOLY vms
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
@@ -26,6 +30,7 @@ KVMSNET6="fd56:fc9a:8b7a:765e::/64"
 ISOLYNET="192.168.133.0/24"
 NATNET="192.168.122.0/24"
 WlANNET="192.168.88.0/24"
+VMGW="192.168.133.254"
 
 case "$1" in
   start)
@@ -964,6 +969,7 @@ case "$1" in
 
 	#$IPT -t nat -A POSTROUTING -o $WORLD -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $KVMS -j MASQUERADE
+	#$IPT -t nat -A POSTROUTING -o $KVMS -j SNAT --to-source 192.168.99.254
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $LAN_NET  -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $WLAN_NET -j MASQUERADE
 	#$IPT -t nat -A POSTROUTING -o $WORLD -s $KVMS_NET -j MASQUERADE
@@ -975,14 +981,22 @@ case "$1" in
 ### nat -> world
 	$IPT -A FORWARD -o $WORLD -s $NATNET -m conntrack --ctstate NEW -j ACCEPT
 
+### lan -> world
+	$IPT -A FORWARD -o $WORLD -s $INTNET -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -o $WORLD -s $INTNET6 -m conntrack --ctstate NEW -j ACCEPT
+
 ### -> kvms 
 	$IPT -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -o $KVMS -m conntrack --ctstate NEW -j ACCEPT
 
 ### -> isoly
-	$IPT -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
-	$IPT6 -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
-	
+	$IPT -A FORWARD -o $ISOLY -s $ISOLYNET -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -o $KVMS -s $ISOLY -m conntrack --ctstate NEW -j ACCEPT
+	#$IPT6 -A FORWARD -o $ISOLY -m conntrack --ctstate NEW -j ACCEPT
+
+### gateway for "special" vms
+	$IPT -A FORWARD -o $VMGW -s $ISOLYNET -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -o $ISOLY -s $VMGW -m conntrack --ctstate NEW -j ACCEPT
 
 ############### allow forwarding for exisitng connections ##############
 
