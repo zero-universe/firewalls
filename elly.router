@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2013.04.25
+# last modified 2013.05.01
 # zero.universe@gmail.com
 #
 
@@ -561,8 +561,8 @@ case "$1" in
     $IPT6 -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ### allow output to lan
-	$IPT -A OUTPUT -o $LAN -m conntrack --ctstate NEW -j ACCEPT
-	$IPT6 -A OUTPUT -o $LAN -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A OUTPUT -o $LAN -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+	$IPT6 -A OUTPUT -o $LAN -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 
 ###########################################################################################################################################################################################################
 #########################  natting + forwarding  #######################
@@ -614,15 +614,15 @@ case "$1" in
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type  echo-request -m limit --limit 80/minute -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type  echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type echo-reply -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 
 ### avira updated
 	#$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p tcp -m multiport --dport 7000,7001,7080,7010,7100 -m conntrack --ctstate NEW -j ACCEPT	
 	#$IPT6 -A FORWARD -i $LAN -o $WORLD -p tcp -m multiport --dport 7000,7001,7080,7010,7100 -m conntrack --ctstate NEW -j ACCEPT
 
 ### world -> lan
-	$IPT -A FORWARD -i $WORLD -o $LAN -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-	$IPT6 -A FORWARD -i $WORLD -o $LAN -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+	#$IPT -A FORWARD -i $WORLD -o $LAN -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	#$IPT6 -A FORWARD -i $WORLD -o $LAN -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ############### allow forwarding for exisitng connections ##############
 
