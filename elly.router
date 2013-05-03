@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2013.05.01
+# last modified 2013.05.03
 # zero.universe@gmail.com
 #
 
@@ -537,10 +537,16 @@ case "$1" in
 ########################################################################
 
 ### FTP,DNS,DHCP,WEB,NTP
-	$IPT -A OUTPUT -o $WORLD -p tcp -m multiport --dport 21,53,67,80,443,137 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A OUTPUT -o $WORLD -p tcp -m multiport --dport 21,53,67,80,443 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT -A OUTPUT -o $WORLD -p udp -m multiport --dport 53,67 -m conntrack --ctstate NEW -j ACCEPT
     $IPT6 -A OUTPUT -o $WORLD -p tcp -m multiport --dport 21,53,80,137,443,547 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A OUTPUT -o $WORLD -p udp -m multiport --dport 53,547 -m conntrack --ctstate NEW -j ACCEPT
+
+### samba
+	$IPT -A OUTPUT -o $WORLD -p tcp -m multiport --dport 139,445 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A OUTPUT -o $WORLD -p udp -m multiport --dport 137,138 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A OUTPUT -o $WORLD -p tcp -m multiport --dport 139,445 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A OUTPUT -o $WORLD -p udp -m multiport --dport 137,138 -m conntrack --ctstate NEW -j ACCEPT
 
 # pings -> world
 	$IPT -A OUTPUT -o $WORLD -s $LANNET -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
@@ -599,17 +605,23 @@ case "$1" in
 ### MY_ICMP_WORLD, MY_TCP_WORLD, MY_UDP_WORLD
 
 ### lan -> world
-# DNS
+### DNS
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p tcp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p udp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -i $LAN -o $WORLD -p tcp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -i $LAN -o $WORLD -p udp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
 
-# web
+### samba
+	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p tcp -m multiport --dport 139,445 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p udp -m multiport --dport 137,138 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -i $LAN -o $WORLD -p tcp -m multiport --dport 139,445 -m conntrack --ctstate NEW -j ACCEPT
+	$IPT6 -A FORWARD -i $LAN -o $WORLD -p udp -m multiport --dport 137,138 -m conntrack --ctstate NEW -j ACCEPT
+
+### web
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p tcp -m multiport --dport 80,443 -m conntrack --ctstate NEW -j ACCEPT
 	$IPT6 -A FORWARD -i $LAN -o $WORLD -p tcp -m multiport --dport 80,443 -m conntrack --ctstate NEW -j ACCEPT
 
-# pings
+### pings
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
 	$IPT -A FORWARD -i $LAN -o $WORLD -s $LANNET -p icmp --icmp-type  echo-request -m limit --limit 80/minute -j ACCEPT
