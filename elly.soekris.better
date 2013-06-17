@@ -1270,7 +1270,7 @@ case "$1" in
 	${IPT6} -A FORWARD -i ${KVMS} -o ${LAN} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 		
 ### ovpn -> lan
-	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPN}NET -m conntrack --ctstate NEW -j ACCEPT	
+	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT	
 	
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
