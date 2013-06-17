@@ -300,7 +300,13 @@ case "$1" in
     
     ${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-    
+
+### dhcp4
+    #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "world_dhcp-67-v4-udp-access: "
+    ${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
+    #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "world_dhcp-68-v4-udp-access: "
+    ${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
+        
 ### OPENVPN_V2
     #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
     ${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
@@ -349,7 +355,7 @@ case "$1" in
 	${IPT} -A MY_ICMP_LANv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest 
-	${IPT} -A MY_ICMP_LANv4 -j LOG --log-prefix "forbidden from lan v4 icmp: "
+	#${IPT} -A MY_ICMP_LANv4 -j LOG --log-prefix "forbidden from lan v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_LANv4 -j DROP
@@ -449,9 +455,11 @@ case "$1" in
     ${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-#	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-tcp-access: "
+#	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-67-v4-tcp-access: "
     ${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
-
+#	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "lan_dhcpd-v68-4-tcp-access: "
+    ${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
+    
 #	${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-tcp-access: "
     ${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
@@ -508,11 +516,15 @@ case "$1" in
     ${IPT6} -A MY_UDP_LANv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-#	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-udp-access: "
+#	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-67-udp-access: "
     ${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
-    
-#    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-udp-access: "
-    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
+#	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "lan_dhcpd-v4-68-udp-access: "
+    ${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
+
+#    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "lan_dhcpd-546-v6-udp-access: "
+    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT        
+#    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "lan_dhcpd-547-v6-udp-access: "
+    ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
 
 ### DNS
 #	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v4-udp-access: "
@@ -679,10 +691,14 @@ case "$1" in
     ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCPD
-#	${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-tcp-access: "
+#	${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-67-v4-tcp-access: "
     ${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
+#	${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "WLAN_dhcpd-68-v4-tcp-access: "
+    ${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
 
-#	${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-tcp-access: "
+#	${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "WLAN_dhcpd-546-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT    
+#	${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-547-v6-tcp-access: "
     ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
@@ -728,10 +744,14 @@ case "$1" in
     ${IPT6} -A MY_UDP_WLANv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-	#${IPT} -A MY_UDP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-v4-udp-access: "
+	#${IPT} -A MY_UDP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-67-v4-udp-access: "
     ${IPT} -A MY_UDP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
-    
-    #${IPT6} -A MY_UDP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-v6-udp-access: "
+    #${IPT} -A MY_UDP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "WLAN_dhcpd-68-v4-udp-access: "
+    ${IPT} -A MY_UDP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
+
+    #${IPT6} -A MY_UDP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "WLAN_dhcpd-546-v6-udp-access: "
+    ${IPT6} -A MY_UDP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
+    #${IPT6} -A MY_UDP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-547-v6-udp-access: "
     ${IPT6} -A MY_UDP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
@@ -885,10 +905,14 @@ case "$1" in
     ${IPT} -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### DHCPD
-	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-tcp-access: "
+	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-67-v4-tcp-access: "
     ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
+	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "KVMS_dhcpd-68-v4-tcp-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
 
-	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-tcp-access: "
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "KVMS_dhcpd-546-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT    
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-547-v6-tcp-access: "
     ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
@@ -930,10 +954,14 @@ case "$1" in
     ${IPT6} -A MY_UDP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
 ### DHCPD
-	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-v4-udp-access: "
+	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-67-v4-udp-access: "
     ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
-    
-    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-v6-udp-access: "
+	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "KVMS_dhcpd-68-v4-udp-access: "
+    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT    
+
+	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "KVMS_dhcpd-546-v6-udp-access: "
+    ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
+    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-547-v6-udp-access: "
     ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
@@ -1026,14 +1054,14 @@ case "$1" in
     ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
-    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
-    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
     #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
@@ -1089,10 +1117,10 @@ case "$1" in
 
 ### proto 41
 	#${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v4-access: "
-	${IPT} -A MY_TCP_HE6v4 -i ${HE6} -s ${TFFM} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
+	#${IPT} -A MY_TCP_HE6v4 -i ${HE6} -s ${TFFM} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
 	
 	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v6-access: "
-	${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
 
 ### SSH
     #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v4-access: "
@@ -1130,10 +1158,10 @@ case "$1" in
     
 ### proto 41
 	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j LOG --log-prefix "HE6_proto-41-v4-access: "
-    ${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack -s ${TFFM} --ctstate NEW -p udp --dport 41 -j ACCEPT
+    #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack -s ${TFFM} --ctstate NEW -p udp --dport 41 -j ACCEPT
     
     #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j LOG --log-prefix "HE6_proto-41-v6-access: "
-    ${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
+    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
     
 ### Transmission Torrent
 	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "HE6_transmission-v4-udp-acces: "
