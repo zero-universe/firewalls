@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.06.15
+# modified 2013.06.20
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -274,6 +274,10 @@ case "$1" in
    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
+### DHCP-requests
+	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-tcp-546-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
+        
 ### connection tracking
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -304,6 +308,10 @@ case "$1" in
 ### proto 41
 	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
 	
+### DHCP-requests
+	#${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
+    ${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
+    
 ### Transmission Torrent
 	#${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v4-udp-acces: "
     #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
@@ -452,6 +460,10 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
+### DHCP-requests
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-tcp-546-access: "
+    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
+
 ### connection tracking
 	${IPT} -A MY_TCP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -475,7 +487,11 @@ case "$1" in
 ### KVMS UDP traffic goes to MY_UDP_KVMS
     ${IPT} -A INPUT -i ${KVMS} -p udp -j MY_UDP_KVMSv4
     ${IPT6} -A INPUT -i ${KVMS} -p udp -j MY_UDP_KVMSv6
-    
+
+### DHCP-requests
+	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-udp-access: "
+    ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
+        
     ${IPT} -A MY_UDP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
 
@@ -774,13 +790,6 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
-### proto 41
-	#${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v4-access: "
-	${IPT} -A MY_TCP_HE6v4 -i ${HE6} -s ${TFFM} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
-	
-	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v6-access: "
-	${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
-
 ### SSH
     #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v4-access: "
     ${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
@@ -814,13 +823,6 @@ case "$1" in
     
     ${IPT} -A MY_UDP_HE6v4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_HE6v6 -m conntrack --ctstate INVALID -j DROP
-    
-### proto 41
-	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j LOG --log-prefix "HE6_proto-41-v4-access: "
-    #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack -s ${TFFM} --ctstate NEW -p udp --dport 41 -j ACCEPT
-    
-    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j LOG --log-prefix "HE6_proto-41-v6-access: "
-    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
     
 ### Transmission Torrent
 	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "HE6_transmission-v4-udp-acces: "
@@ -1131,6 +1133,10 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
+### DHCP-requests
+	#${IPT6} -A MY_TCP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "isoly_dhcpd-v6-tcp-546-access: "
+    ${IPT6} -A MY_TCP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
+
 ### connection tracking
 	${IPT} -A MY_TCP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -1157,7 +1163,11 @@ case "$1" in
     
     ${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
-    
+
+### DHCP-requests
+	#${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "isoly_dhcpd-v6-udp-546-access: "
+    ${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
+        
 ### connection tracking
 	${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
