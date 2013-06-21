@@ -697,9 +697,9 @@ case "$1" in
 #	${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "WLAN_dhcpd-68-v4-tcp-access: "
     ${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
 
-#	${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "WLAN_dhcpd-546-v6-tcp-access: "
-    ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT    
-#	${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-547-v6-tcp-access: "
+	#${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "WLAN_dhcpd-546-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT    
+	#${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "WLAN_dhcpd-547-v6-tcp-access: "
     ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
@@ -1065,9 +1065,9 @@ case "$1" in
     #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### connection tracking
 	${IPT6} -A MY_ICMP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
