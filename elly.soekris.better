@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2013.06.20
+# last modified 2013.06.21
 # zero.universe@gmail.com
 #
 
@@ -100,14 +100,14 @@ case "$1" in
     ${IPT} -F
     ${IPT} -t nat -F
     ${IPT} -t mangle -F
-    ${IPT} -X
     ${IPT} -t nat -X
     ${IPT} -t mangle -X
+	${IPT} -X
 
     ${IPT6} -F
     ${IPT6} -t mangle -F
-    ${IPT6} -X
     ${IPT6} -t mangle -X
+    ${IPT6} -X
 
 ########################### default policies ###########################
 
@@ -1294,7 +1294,18 @@ case "$1" in
   echo "stopping firewall"
 
   echo "stopping firewall"
-    
+
+### flush tables
+	${IPT} -F
+    ${IPT} -t nat -F
+    ${IPT} -t mangle -F
+    ${IPT} -t nat -X
+    ${IPT} -t mangle -X
+
+    ${IPT6} -F
+    ${IPT6} -t mangle -F
+    ${IPT6} -t mangle -X
+        
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
 	${IPT} -X MY_ICMP_WORLDv4
@@ -1389,20 +1400,11 @@ case "$1" in
     
     ${IPT6} -F MY_UDP_HE6v6
     ${IPT6} -X MY_UDP_HE6v6
-    
-### table flush
-    ${IPT} -F
-    ${IPT} -t nat -F
-    ${IPT} -t mangle -F
-    
-    ${IPT} -X
+
+### delete tables
+	${IPT} -X
     ${IPT6} -X
-    
-    ${IPT} -t nat -X
-    
-    ${IPT} -t mangle -X
-	${IPT6} -t mangle -X
-    
+        
 ### deactivate ip 4+6 forwarding
     echo 0 > /proc/sys/net/ipv4/ip_forward
     echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
