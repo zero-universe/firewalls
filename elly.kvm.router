@@ -162,6 +162,9 @@ case "$1" in
     
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
+        
+### connection tracking
+    ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
@@ -170,10 +173,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
-### connection tracking
-    ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
+
 ### log rest
 	#${IPT} -A MY_ICMP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 icmp: "
 	
@@ -181,6 +181,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -j DROP
     
 ### MY_ICMP_WORLDv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -220,9 +224,6 @@ case "$1" in
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 icmp: "
 	
@@ -243,7 +244,11 @@ case "$1" in
     
     ${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-
+        
+### connection tracking
+	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -277,11 +282,7 @@ case "$1" in
 ### DHCP-requests
 	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-tcp-546-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
-        
-### connection tracking
-	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
+
 ### log rest
 	#${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
 	#${IPT6} -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
@@ -305,6 +306,10 @@ case "$1" in
     ${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### proto 41
 	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
 	
@@ -326,10 +331,6 @@ case "$1" in
     #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v6-udp-access: "
     #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
 #	${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
@@ -356,6 +357,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "KVMS_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -364,9 +368,6 @@ case "$1" in
     #${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest 
 #	${IPT} -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 icmp: "
 	
@@ -374,6 +375,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_KVMSv4 -j DROP
     
 ### MY_ICMP_KVMSv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -413,9 +418,6 @@ case "$1" in
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 icmp: "
 	
@@ -437,6 +439,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_TCP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -464,10 +470,6 @@ case "$1" in
 	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-tcp-546-access: "
     ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_TCP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 tcp: "
 #	${IPT6} -A MY_TCP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 tcp: "
@@ -525,6 +527,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "OVPN_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -533,9 +538,6 @@ case "$1" in
     #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "OVPN_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest 
 #	${IPT} -A MY_ICMP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 icmp: "
 	
@@ -543,6 +545,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_OVPNv4 -j DROP
     
 ### MY_ICMP_OVPNv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -582,9 +588,6 @@ case "$1" in
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 icmp: "
 	
@@ -606,6 +609,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_TCP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -629,10 +636,6 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
-### connection tracking
-	${IPT} -A MY_TCP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_TCP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 tcp: "
 #	${IPT6} -A MY_TCP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 tcp: "
@@ -685,6 +688,9 @@ case "$1" in
     
     ${IPT} -A MY_ICMP_HE6v4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_HE6v6 -m conntrack --ctstate INVALID -j DROP
+        
+### connection tracking
+    ${IPT} -A MY_ICMP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "HE6_icmp-fragmentation-needed: "
@@ -693,10 +699,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "HE6_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
-### connection tracking
-    ${IPT} -A MY_ICMP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    
+
 ### log rest
 	#${IPT} -A MY_ICMP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 icmp: "
 	
@@ -704,6 +707,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_HE6v4 -j DROP
     
 ### MY_ICMP_HE6v6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -743,9 +750,6 @@ case "$1" in
     #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 icmp: "
 	
@@ -767,6 +771,10 @@ case "$1" in
     ${IPT} -A MY_TCP_HE6v4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_TCP_HE6v6 -m conntrack --ctstate INVALID -j DROP
 
+### connection tracking
+	${IPT} -A MY_TCP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -797,10 +805,6 @@ case "$1" in
    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v6-access: "
     ${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_TCP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT} -A MY_TCP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 tcp: "
 	#${IPT6} -A MY_TCP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 tcp: "
@@ -824,6 +828,10 @@ case "$1" in
     ${IPT} -A MY_UDP_HE6v4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_HE6v6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_UDP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_UDP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ### Transmission Torrent
 	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "HE6_transmission-v4-udp-acces: "
     #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
@@ -838,10 +846,6 @@ case "$1" in
     #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "HE6_openvpn-v6-udp-access: "
     #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_UDP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_UDP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_UDP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 udp: "
 #	${IPT6} -A MY_UDP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 udp: "
@@ -868,6 +872,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "NAT_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -876,9 +883,6 @@ case "$1" in
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "NAT_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest 
 #	${IPT} -A MY_ICMP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 icmp: "
 	
@@ -886,6 +890,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -j DROP
     
 ### MY_ICMP_NATv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -925,9 +933,6 @@ case "$1" in
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 icmp: "
 	
@@ -949,6 +954,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_TCP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -972,10 +981,6 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
-### connection tracking
-	${IPT} -A MY_TCP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_TCP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 tcp: "
 #	${IPT6} -A MY_TCP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 tcp: "
@@ -1029,6 +1034,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "ISOLY_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -1037,9 +1045,6 @@ case "$1" in
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "ISOLY_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest 
 #	${IPT} -A MY_ICMP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 icmp: "
 	
@@ -1047,6 +1052,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -j DROP
     
 ### MY_ICMP_ISOLYv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -1086,9 +1095,6 @@ case "$1" in
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
-### connection tracking
-	${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 	#${IPT6} -A MY_ICMP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 icmp: "
 	
@@ -1110,6 +1116,10 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
     
+### connection tracking
+	${IPT} -A MY_TCP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -1137,10 +1147,6 @@ case "$1" in
 	#${IPT6} -A MY_TCP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "isoly_dhcpd-v6-tcp-546-access: "
     ${IPT6} -A MY_TCP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
 
-### connection tracking
-	${IPT} -A MY_TCP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
 ### log rest
 #	${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
 #	${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
@@ -1163,15 +1169,15 @@ case "$1" in
     
     ${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
-
-### DHCP-requests
-	#${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "isoly_dhcpd-v6-udp-546-access: "
-    ${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
         
 ### connection tracking
 	${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
+### DHCP-requests
+	#${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "isoly_dhcpd-v6-udp-546-access: "
+    ${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
+
 ### log rest
 #	${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
 #	${IPT6} -A MY_UDP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 udp: "
