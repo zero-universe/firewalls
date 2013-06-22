@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.06.21
+# modified 2013.06.22
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -32,6 +32,7 @@ NATNET="192.168.122.0/24"
 WlANNET="192.168.88.0/24"
 VMGW="192.168.133.254"
 HE6="hipv6"
+HE6NET="2001:470:1f0a:3c::/64"
 TFFM="216.66.80.30"
 
 case "$1" in
@@ -280,8 +281,8 @@ case "$1" in
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCP-requests
-	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-tcp-546-access: "
-    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
+	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-tcp-546-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT
 
 ### log rest
 	#${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
@@ -314,8 +315,8 @@ case "$1" in
 	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
 	
 ### DHCP-requests
-	#${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
-    ${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
+	#${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
+    ${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
     
 ### Transmission Torrent
 	#${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "world_transmission-v4-udp-acces: "
@@ -491,7 +492,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${KVMS} -p udp -j MY_UDP_KVMSv6
 
 ### DHCP-requests
-	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-udp-access: "
+	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p udp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-udp-546-access: "
     ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
         
     ${IPT} -A MY_UDP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
@@ -746,9 +747,9 @@ case "$1" in
     ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 icmp: "
@@ -831,13 +832,6 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_UDP_HE6v4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_HE6v6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
-### Transmission Torrent
-	#${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "HE6_transmission-v4-udp-acces: "
-    #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
-    
-    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j LOG --log-prefix "HE6_transmission-v6-udp-acces: "
-    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 6969 -j ACCEPT
 
 ### OPENVPN_V2
     #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "HE6_openvpn-v4-udp-access: "
@@ -1202,6 +1196,12 @@ case "$1" in
 	#${IPT} -t nat -A POSTROUTING -o ${WORLD} -s ${KVMSNET} -j MASQUERADE
     
 ############################## forwarding ##############################    
+
+############### allow forwarding for exisitng connections ##############
+
+    ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
     
 ### nics: world, kvms, ovpn, nat, isoly
 
@@ -1234,10 +1234,6 @@ case "$1" in
 	${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT6} -A FORWARD -o ${HE6} -s ${INTLAN6} -m conntrack --ctstate NEW -j ACCEPT
 
-############### allow forwarding for exisitng connections ##############
-
-    ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ########################################################################
 ######################## end of rules ##################################

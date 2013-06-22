@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #
-# last modified 2013.06.21
+# last modified 2013.06.22
 # zero.universe@gmail.com
 #
 
@@ -307,8 +307,8 @@ case "$1" in
     #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### DHCPDv6 requests
-	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
-    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT
+	#${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
+    ${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
 	
 ### log rest
 #	${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
