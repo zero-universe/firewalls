@@ -1233,6 +1233,8 @@ case "$1" in
 ############################# masquerading #############################
 
 	${IPT} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
+	#${IPT6} -t nat -A POSTROUTING -o ${HE6} -j MASQUERADE
+	${IPT6} -t nat -A POSTROUTING -o ${HE6} -j SNAT --to-source 2001:470:1f0a:3c::2
     
 ############################## forwarding ##############################    
 
@@ -1297,9 +1299,9 @@ case "$1" in
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT	
+	${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${HE6} -o ${LAN} -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT	
 	
-    	
 ########################################################################
 ######################## end of rules ##################################
 ########################################################################
