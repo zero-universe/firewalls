@@ -16,7 +16,7 @@ IPT=$(which iptables)
 IPT6=$(which ip6tables)
 WORLD="eth0"
 NAT="virbr0"
-ISOLY="virbr1"
+ISOLY="virbr2"
 MOD=$(which modprobe)
 INTLAN="192.168.4.0/24"
 ISOLYNET="192.168.200.0/24"
@@ -602,6 +602,10 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
+### web
+    #${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "isoly_web-v4-access: "
+    ${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    
 ### log rest
 #	${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
 #	${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
