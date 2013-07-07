@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.06.22
+# last modified 2013.07.07
 # zero.universe@gmail.com
 #
 
@@ -800,7 +800,7 @@ case "$1" in
 ########################################################################
 
 ### MY_ICMP_KVMS
-    
+
 ### create MY_ICMP_KVMS rules
 	${IPT} -N MY_ICMP_KVMSv4
 	${IPT6} -N MY_ICMP_KVMSv6
@@ -808,13 +808,14 @@ case "$1" in
 ### KVMS icmp traffic goes to MY_ICMP_KVMS
     ${IPT} -A INPUT -i ${KVMS} -p icmp -j MY_ICMP_KVMSv4
     ${IPT6} -A INPUT -i ${KVMS} -p icmpv6 -j MY_ICMP_KVMSv6
+    #${IPT6} -A INPUT -i ${KVMS} -p icmpv6 -j ACCEPT
     
     ${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
-    
+
 ### connection tracking
 	${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
+	    
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "KVMS_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -822,9 +823,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "KVMS_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
+    
 ### log rest 
-	#${IPT} -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 icmp: "
+	#${IPT} -A MY_ICMP_KVMSv4 -j LOG --log-prefix "forbidden from kvms v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_KVMSv4 -j DROP
@@ -874,7 +875,7 @@ case "$1" in
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
-#	${IPT6} -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 icmp: "
+	#${IPT6} -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 icmp: "
 	
 ### standard policy	
     ${IPT6} -A MY_ICMP_KVMSv6 -j DROP
@@ -891,8 +892,8 @@ case "$1" in
     ${IPT} -A INPUT -i ${KVMS} -p tcp -j MY_TCP_KVMSv4
     ${IPT6} -A INPUT -i ${KVMS} -p tcp -j MY_TCP_KVMSv6
     
-    ${IPT} -A MY_ICMP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
+    ${IPT} -A MY_TCP_KVMSv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_TCP_KVMSv6 -m conntrack --ctstate INVALID -j DROP
         
 ### connection tracking
 	${IPT} -A MY_TCP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -921,31 +922,50 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
-### DHCPD
-	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-67-v4-tcp-access: "
-    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
-	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "KVMS_dhcpd-68-v4-tcp-access: "
-    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
+### SSH
+    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v4-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
-	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "KVMS_dhcpd-546-v6-tcp-access: "
-    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT    
-	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-547-v6-tcp-access: "
+### DHCPD
+	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "kvms_dhcpd-67-v4-tcp-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
+	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "kvms_dhcpd-v68-4-tcp-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "kvms_dhcpd-v6-tcp-547-access: "
     ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### DNS
-    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-tcp-access: "
+    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "kvms_dns-v4-tcp-access: "
     ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
     
-	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-tcp-access: "
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "kvms_dns-v6-tcp-access: "
     ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
 
+### NTP
+	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "kvms_ntp-v4-tcp-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "kvms_ntp-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+
+### TOR 
+    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 9062 -j LOG --log-prefix "kvms_tor-v4-tcp-access: "
+    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 9062 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "kvms_tor-v4-tcp-access: "
+    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
+    
 ### IPSEC
     #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -p 50 -j ACCEPT
     #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -p 51 -j ACCEPT
 
 ### log rest
-	#${IPT} -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 tcp: "
-	#${IPT6} -A MY_TCP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 tcp: "
+	#${IPT} -A MY_TCP_KVMSv4 -j LOG --log-prefix "forbidden from kvms v4 tcp: "
+	#${IPT6} -A MY_TCP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 tcp: "
 	
 ### drop rest
     ${IPT} -A MY_TCP_KVMSv4 -j DROP
@@ -969,38 +989,45 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_UDP_KVMSv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_KVMSv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
-### DHCPD
-	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "KVMS_dhcpd-67-v4-udp-access: "
-    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
-	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "KVMS_dhcpd-68-v4-udp-access: "
-    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT    
 
-	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "KVMS_dhcpd-546-v6-udp-access: "
-    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
-    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "KVMS_dhcpd-547-v6-udp-access: "
+### DHCPD
+#	${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "kvms_dhcpd-v4-67-udp-access: "
+    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
+#	${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "kvms_dhcpd-v4-68-udp-access: "
+    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
+
+	#${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-udp-547-access: "
+    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT        
+    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "kvms_dhcpd-v6-udp-547-access: "
     ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
 ### DNS
-	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v4-udp-access: "
+#	${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "kvms_dns-v4-udp-access: "
     ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
-    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "KVMS_dns-v6-udp-access: "
+#    ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "kvms_dns-v6-udp-access: "
     ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
 
+### NTP
+#	${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "kvms_ntp-v4-udp-access: "
+    ${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+    
+#    ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "kvms_ntp-v6-udp-access: "
+    ${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+    
 ### IPSEC
 	#${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
 
 ### OPENVPN_V2
-    #${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v4-udp-access: "
+    #${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "kvms_openvpn-v4-udp-access: "
     #${IPT} -A MY_UDP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
     
-    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "KVMS_openvpn-v6-udp-access: "
+    #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "kvms_openvpn-v6-udp-access: "
     #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
-
+	
 ### log rest
-	#${IPT} -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from KVMS v4 udp: "
-	#${IPT6} -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from KVMS v6 udp: "
+#	${IPT} -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from kvms v4 udp: "
+#	${IPT6} -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_KVMSv4 -j DROP
@@ -1149,11 +1176,11 @@ case "$1" in
 
 ### DNS
 	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "HE6_dns-v6-tcpp-access: "
-    ${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
     
 ### DHCPv6 requests
     #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "HE6_dhcpd-547-v6-tcp-access: "
-    ${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
 
 ### log rest
 	#${IPT} -A MY_TCP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 tcp: "
@@ -1184,11 +1211,11 @@ case "$1" in
 
 ### DNS
 	#${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "HE6_dns-v6-udp-access: "
-    ${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
+    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
     
 ### DHCPv6 requests
     #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "HE6_dhcpd-547-v6-udp-access: "
-    ${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
+    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 	
 ### OPENVPN_V2
     #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "HE6_openvpn-v4-udp-access: "
@@ -1258,9 +1285,9 @@ case "$1" in
 ### lan -> world
 	${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
-#	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${HE6} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${LAN} -o ${HE6} -s ${HE6NET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${LAN} -o ${HE6} -s ${HE6NET} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### lan -> wlan
 	${IPT} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -1274,7 +1301,7 @@ case "$1" in
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### wlan -> world
-#	${IPT} -A FORWARD -i ${WLAN} -o ${WORLD} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${WLAN} -o ${WORLD} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
 #	${IPT6} -A FORWARD -i ${WLAN} -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
 
 ### wlan -> lan
@@ -1286,7 +1313,7 @@ case "$1" in
 	${IPT6} -A FORWARD -i ${WLAN} -o ${KVMS} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### kvms -> world
-#	${IPT} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET} -m conntrack --ctstate NEW -j ACCEPT
 #	${IPT6} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms -> lan
