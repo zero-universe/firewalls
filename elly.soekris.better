@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.07.07
+# last modified 2013.07.10
 # zero.universe@gmail.com
 #
 
@@ -20,6 +20,7 @@ LAN="eth1"
 WLAN="eth2"
 KVMS="eth3"
 OVPN="tun0"
+OVPNT"tun1"
 HE6="hipv6"
 
 MOD=$(which modprobe)
@@ -30,6 +31,7 @@ WLANNET6="fd55:fc9a:8b7a:765e::/64"
 KVMSNET="192.168.99.0/24"
 KVMSNET6="fd56:fc9a:8b7a:765e::/64"
 OVPNNET="192.168.111.0/24"
+OVPNTNET="192.168.112.0/24"
 TFFM="216.66.80.30"
 HE6NET="2001:470:1f0a:3c::/64"
 
@@ -282,6 +284,12 @@ case "$1" in
 ### DHCPv6-requests
 	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -s ${LAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "world_dhcpd-v6-tcp-547-access: "
     #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -s ${LAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
+    
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j LOG --log-prefix "world_openvpn-v4-tcp-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j ACCEPT
+
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j LOG --log-prefix "world_openvpn-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j ACCEPT
     
 ### log rest
 #	${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
@@ -1299,6 +1307,7 @@ case "$1" in
 
 ### lan -> openvpn
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${LAN} -o ${OVPNT} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### wlan -> world
 	${IPT} -A FORWARD -i ${WLAN} -o ${WORLD} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -1321,7 +1330,8 @@ case "$1" in
 	${IPT6} -A FORWARD -i ${KVMS} -o ${LAN} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 		
 ### ovpn -> lan
-	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT	
+	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${OVPNT} -o ${LAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
