@@ -1330,6 +1330,9 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
+### ssh
+	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+
 ### log rest
 	#${IPT} -A MY_TCP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 tcp: "
 	#${IPT6} -A MY_TCP_OVPNTv6 -j LOG --log-prefix "forbidden from OVPNT v6 tcp: "
