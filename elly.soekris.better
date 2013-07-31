@@ -1040,6 +1040,330 @@ case "$1" in
 ### drop rest
     ${IPT} -A MY_UDP_KVMSv4 -j DROP
     ${IPT6} -A MY_UDP_KVMSv6 -j DROP
+
+
+###########################################################################################################################################################################################################
+#########################  nic for OVPN:  OVPN  ########################
+########################################################################
+
+### MY_ICMP_OVPN
+    
+### create MY_ICMP_OVPN rules
+	${IPT} -N MY_ICMP_OVPNv4
+	${IPT6} -N MY_ICMP_OVPNv6
+
+### OVPN icmp traffic goes to MY_ICMP_OVPN
+    ${IPT} -A INPUT -i ${OVPN} -p icmp -j MY_ICMP_OVPNv4
+    ${IPT6} -A INPUT -i ${OVPN} -p icmpv6 -j MY_ICMP_OVPNv6
+    
+    ${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "OVPN_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "OVPN_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### log rest 
+	#${IPT} -A MY_ICMP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_OVPNv4 -j DROP
+    
+### MY_ICMP_OVPNv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_OVPNv6 -i ${OVPN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -i ${OVPN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_OVPNv6 -i ${OVPN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -i ${OVPN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_OVPNv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### MY_TCP_OVPN
+
+### create MY_TCP_OVPN rules
+	${IPT} -N MY_TCP_OVPNv4
+	${IPT6} -N MY_TCP_OVPNv6
+
+### OVPN tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${OVPN} -p tcp -j MY_TCP_OVPNv4
+    ${IPT6} -A INPUT -i ${OVPN} -p tcp -j MY_TCP_OVPNv6
+    
+    ${IPT} -A MY_ICMP_OVPNv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_ICMP_OVPNv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_TCP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+###  drop stealth scans etc. ###
+
+### no flags
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+### SYN and FIN flags
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+### SYN and RST flags at the same time
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+### FIN and RST flags at the same time
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+### FIN but no ACK
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+### PSH but no ACK
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+### URG but no ACK
+    ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### log rest
+	#${IPT} -A MY_TCP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 tcp: "
+	#${IPT6} -A MY_TCP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 tcp: "
+	
+### drop rest
+    ${IPT} -A MY_TCP_OVPNv4 -j DROP
+    ${IPT6} -A MY_TCP_OVPNv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### MY_UDP_OVPN
+
+### create MY_UDP_OVPN rules
+	${IPT} -N MY_UDP_OVPNv4
+	${IPT6} -N MY_UDP_OVPNv6
+
+### OVPN UDP traffic goes to MY_UDP_OVPN
+    ${IPT} -A INPUT -i ${OVPN} -p udp -j MY_UDP_OVPNv4
+    ${IPT6} -A INPUT -i ${OVPN} -p udp -j MY_UDP_OVPNv6
+    
+    ${IPT} -A MY_UDP_OVPNv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_UDP_OVPNv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_UDP_OVPNv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_UDP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+### log rest
+	#${IPT} -A MY_UDP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 udp: "
+	#${IPT6} -A MY_UDP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_OVPNv4 -j DROP
+    ${IPT6} -A MY_UDP_OVPNv6 -j DROP
+
+
+###########################################################################################################################################################################################################
+#########################  nic for OVPN:  OVPNT  #######################
+########################################################################
+
+### MY_ICMP_OVPNT
+    
+### create MY_ICMP_OVPNT rules
+	${IPT} -N MY_ICMP_OVPNTv4
+	${IPT6} -N MY_ICMP_OVPNTv6
+
+### OVPNT icmp traffic goes to MY_ICMP_OVPNT
+    ${IPT} -A INPUT -i ${OVPNT} -p icmp -j MY_ICMP_OVPNTv4
+    ${IPT6} -A INPUT -i ${OVPNT} -p icmpv6 -j MY_ICMP_OVPNTv6
+    
+    ${IPT} -A MY_ICMP_OVPNTv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_ICMP_OVPNTv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_ICMP_OVPNTv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+    ${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "OVPNT_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "OVPNT_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_OVPNTv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### log rest 
+	#${IPT} -A MY_ICMP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_OVPNTv4 -j DROP
+    
+### MY_ICMP_OVPNTv6
+
+### connection tracking
+	${IPT6} -A MY_ICMP_OVPNTv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_OVPNTv6 -i ${OVPNT} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -i ${OVPNT} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_OVPNTv6 -i ${OVPNT} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -i ${OVPNT} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_OVPNTv6 -j LOG --log-prefix "forbidden from OVPNT v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_OVPNTv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### MY_TCP_OVPNT
+
+### create MY_TCP_OVPNT rules
+	${IPT} -N MY_TCP_OVPNTv4
+	${IPT6} -N MY_TCP_OVPNTv6
+
+### OVPNT tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${OVPNT} -p tcp -j MY_TCP_OVPNTv4
+    ${IPT6} -A INPUT -i ${OVPNT} -p tcp -j MY_TCP_OVPNTv6
+    
+    ${IPT} -A MY_ICMP_OVPNTv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_ICMP_OVPNTv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_TCP_OVPNTv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+###  drop stealth scans etc. ###
+
+### no flags
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+### SYN and FIN flags
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+### SYN and RST flags at the same time
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+### FIN and RST flags at the same time
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+### FIN but no ACK
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+### PSH but no ACK
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+### URG but no ACK
+    ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### log rest
+	#${IPT} -A MY_TCP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 tcp: "
+	#${IPT6} -A MY_TCP_OVPNTv6 -j LOG --log-prefix "forbidden from OVPNT v6 tcp: "
+	
+### drop rest
+    ${IPT} -A MY_TCP_OVPNTv4 -j DROP
+    ${IPT6} -A MY_TCP_OVPNTv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### MY_UDP_OVPNT
+
+### create MY_UDP_OVPNT rules
+	${IPT} -N MY_UDP_OVPNTv4
+	${IPT6} -N MY_UDP_OVPNTv6
+
+### OVPNT UDP traffic goes to MY_UDP_OVPNT
+    ${IPT} -A INPUT -i ${OVPNT} -p udp -j MY_UDP_OVPNTv4
+    ${IPT6} -A INPUT -i ${OVPNT} -p udp -j MY_UDP_OVPNTv6
+    
+    ${IPT} -A MY_UDP_OVPNTv4 -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A MY_UDP_OVPNTv6 -m conntrack --ctstate INVALID -j DROP
+    
+### connection tracking
+	${IPT} -A MY_UDP_OVPNTv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A MY_UDP_OVPNTv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+### log rest
+	#${IPT} -A MY_UDP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 udp: "
+	#${IPT6} -A MY_UDP_OVPNTv6 -j LOG --log-prefix "forbidden from OVPNT v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_OVPNTv4 -j DROP
+    ${IPT6} -A MY_UDP_OVPNTv6 -j DROP
     
 
 ###########################################################################################################################################################################################################
