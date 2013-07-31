@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.07.11
+# last modified 2013.07.31
 # zero.universe@gmail.com
 #
 
@@ -1290,13 +1290,13 @@ case "$1" in
 ### world -> openvpn
 	#${IPT} -A FORWARD -i ${WORLD} -o ${OVPN} -m conntrack --ctstate NEW -j ACCEPT
 
+
+##### LAN #####
 ### lan -> world
-	${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
-	#${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${LAN} -o ${HE6} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${KVMS} -o ${HE6} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
-	
+	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
+
 ### lan -> wlan
 	${IPT} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
@@ -1305,13 +1305,18 @@ case "$1" in
 	${IPT} -A FORWARD -i ${LAN} -o ${KVMS} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${KVMS} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 
+### lan -> he6
+	${IPT6} -A FORWARD -i ${LAN} -o ${HE6} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
+
 ### lan -> openvpn
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPNT} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
-	
+		
+
+##### WLAN #####
 ### wlan -> world
 	${IPT} -A FORWARD -i ${WLAN} -o ${WORLD} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
-#	${IPT6} -A FORWARD -i ${WLAN} -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${WLAN} -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
 
 ### wlan -> lan
     ${IPT} -A FORWARD -i ${WLAN} -o ${LAN} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -1320,24 +1325,39 @@ case "$1" in
 ### wlan -> kvms
 	${IPT} -A FORWARD -i ${WLAN} -o ${KVMS} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${WLAN} -o ${KVMS} -m conntrack --ctstate NEW -j ACCEPT
-	
+
+### wlan -> hipv6
+	#${IPT6} -A FORWARD -i ${WLAN} -o ${HE6} -s ${WLANNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+
+##### KVMS #####
 ### kvms -> world
 	${IPT} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET} -m conntrack --ctstate NEW -j ACCEPT
-#	${IPT6} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${KVMS} -o ${WORLD} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms -> lan
 	${IPT} -A FORWARD -i ${KVMS} -o ${LAN} -s ${KVMSNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${KVMS} -o ${LAN} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
-		
+
+### kvms -> wlan
+	${IPT} -A FORWARD -i ${KVMS} -o ${WLAN} -s ${KVMSNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${KVMS} -o ${WLAN} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+### kvms -> hipv6
+	${IPT6} -A FORWARD -i ${KVMS} -o ${HE6} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+
+##### OVPN+OVPNT #####
 ### ovpn -> lan
 	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -i ${OVPNT} -o ${LAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
+
 	
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
-	#${IPT6} -A FORWARD -i ${HE6} -o ${LAN} -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT	
+	#${IPT} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${HE6} -o ${LAN} -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 	
 ########################################################################
 ######################## end of rules ##################################
