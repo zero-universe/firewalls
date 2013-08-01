@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.07.11
+# modified 2013.08.01
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -334,8 +334,8 @@ case "$1" in
     #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
-#	${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
+	#${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
+	#${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_WORLDv4 -j DROP
@@ -472,7 +472,7 @@ case "$1" in
     #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v4-access: "
     ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-   #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v6-access: "
+	#${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v6-access: "
     ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DHCP-requests
@@ -528,8 +528,8 @@ case "$1" in
     #${IPT6} -A MY_UDP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from kvms v4 udp: "
-#	${IPT6} -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 udp: "
+	#${IPT} -A MY_UDP_KVMSv4 -j LOG --log-prefix "forbidden from kvms v4 udp: "
+	#${IPT6} -A MY_UDP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_KVMSv4 -j DROP
@@ -565,7 +565,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### log rest 
-#	${IPT} -A MY_ICMP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 icmp: "
+	#${IPT} -A MY_ICMP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_OVPNv4 -j DROP
@@ -663,8 +663,8 @@ case "$1" in
     ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### log rest
-#	${IPT} -A MY_TCP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 tcp: "
-#	${IPT6} -A MY_TCP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 tcp: "
+	#${IPT} -A MY_TCP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 tcp: "
+	#${IPT6} -A MY_TCP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 tcp: "
 	
 ### drop rest
     ${IPT} -A MY_TCP_OVPNv4 -j DROP
@@ -690,8 +690,8 @@ case "$1" in
 	${IPT6} -A MY_UDP_OVPNv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
-#	${IPT} -A MY_UDP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 udp: "
-#	${IPT6} -A MY_UDP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 udp: "
+	#${IPT} -A MY_UDP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 udp: "
+	#${IPT6} -A MY_UDP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_OVPNv4 -j DROP
@@ -866,8 +866,8 @@ case "$1" in
     #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_UDP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 udp: "
-#	${IPT6} -A MY_UDP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 udp: "
+	#${IPT} -A MY_UDP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 udp: "
+	#${IPT6} -A MY_UDP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_HE6v4 -j DROP
@@ -903,7 +903,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### log rest 
-#	${IPT} -A MY_ICMP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 icmp: "
+	#${IPT} -A MY_ICMP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_NATv4 -j DROP
@@ -977,7 +977,7 @@ case "$1" in
 	${IPT} -A MY_TCP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
-###  drop stealth scans etc. ###
+### drop stealth scans etc. ###
 
 ### no flags
     ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ALL NONE -j DROP
@@ -1028,8 +1028,8 @@ case "$1" in
 	${IPT6} -A MY_UDP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
-#	${IPT} -A MY_UDP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 udp: "
-#	${IPT6} -A MY_UDP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 udp: "
+	#${IPT} -A MY_UDP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 udp: "
+	#${IPT6} -A MY_UDP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_NATv4 -j DROP
@@ -1065,7 +1065,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### log rest 
-#	${IPT} -A MY_ICMP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 icmp: "
+	#${IPT} -A MY_ICMP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_ISOLYv4 -j DROP
@@ -1167,8 +1167,8 @@ case "$1" in
     ${IPT6} -A MY_TCP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p tcp --dport 546 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
-#	${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
+	#${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
+	#${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
 	
 ### drop rest
     ${IPT} -A MY_TCP_ISOLYv4 -j DROP
@@ -1198,8 +1198,8 @@ case "$1" in
     ${IPT6} -A MY_UDP_ISOLYv6 -i ${ISOLY} -m conntrack --ctstate RELATED -p udp --dport 546 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
-#	${IPT6} -A MY_UDP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 udp: "
+	#${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
+	#${IPT6} -A MY_UDP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_ISOLYv4 -j DROP

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# modified 2013.05.21
+# modified 2013.08.01
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host with 1 nic
@@ -264,7 +264,7 @@ case "$1" in
     #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
     ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-   #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
+	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### https
@@ -306,8 +306,8 @@ case "$1" in
     #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
 
 ### log rest
-#	${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
-#	${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
+	#${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
+	#${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_WORLDv4 -j DROP
@@ -343,7 +343,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### log rest 
-#	${IPT} -A MY_ICMP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 icmp: "
+	#${IPT} -A MY_ICMP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_NATv4 -j DROP
@@ -441,8 +441,8 @@ case "$1" in
     ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### log rest
-#	${IPT} -A MY_TCP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 tcp: "
-#	${IPT6} -A MY_TCP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 tcp: "
+	#${IPT} -A MY_TCP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 tcp: "
+	#${IPT6} -A MY_TCP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 tcp: "
 	
 ### drop rest
     ${IPT} -A MY_TCP_NATv4 -j DROP
@@ -468,8 +468,8 @@ case "$1" in
 	${IPT6} -A MY_UDP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
-#	${IPT} -A MY_UDP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 udp: "
-#	${IPT6} -A MY_UDP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 udp: "
+	#${IPT} -A MY_UDP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 udp: "
+	#${IPT6} -A MY_UDP_NATv6 -j LOG --log-prefix "forbidden from NAT v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_NATv4 -j DROP
@@ -505,7 +505,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### log rest 
-#	${IPT} -A MY_ICMP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 icmp: "
+	#${IPT} -A MY_ICMP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 icmp: "
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_ISOLYv4 -j DROP
@@ -607,8 +607,8 @@ case "$1" in
     ${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
 ### log rest
-#	${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
-#	${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
+	#${IPT} -A MY_TCP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 tcp: "
+	#${IPT6} -A MY_TCP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 tcp: "
 	
 ### drop rest
     ${IPT} -A MY_TCP_ISOLYv4 -j DROP
@@ -634,8 +634,8 @@ case "$1" in
 	${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
-#	${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
-#	${IPT6} -A MY_UDP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 udp: "
+	#${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
+	#${IPT6} -A MY_UDP_ISOLYv6 -j LOG --log-prefix "forbidden from ISOLY v6 udp: "
 	
 ### drop rest
     ${IPT} -A MY_UDP_ISOLYv4 -j DROP
@@ -648,11 +648,8 @@ case "$1" in
     
 ############################# masquerading #############################
 
-    #${IPT} -A FORWARD -o ${WORLD} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING -j ACCEPT
     ${IPT} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
-
-	#${IPT} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
+	#${IPT6} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
 	#${IPT} -t nat -A POSTROUTING -o ${KVMS} -j SNAT --to-source 192.168.99.254
     
 ############################## forwarding ##############################    
