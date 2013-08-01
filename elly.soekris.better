@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.07.31
+# last modified 2013.08.01
 # zero.universe@gmail.com
 #
 
@@ -1504,10 +1504,10 @@ case "$1" in
 
 ### SSH
     #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v4-access: "
-    ${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-   #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v6-access: "
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
 ### DNS
 	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "HE6_dns-v6-tcpp-access: "
@@ -1614,10 +1614,6 @@ case "$1" in
     #${IPT6} -A FORWARD -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
     #${IPT6} -A FORWARD -i ${WORLD} -p udp -j MY_UDP_WORLDv6
 
-### world -> openvpn
-	#${IPT} -A FORWARD -i ${WORLD} -o ${OVPN} -m conntrack --ctstate NEW -j ACCEPT
-
-
 ##### LAN #####
 ### lan -> world
 	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -1683,6 +1679,7 @@ case "$1" in
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT6} -A FORWARD -i ${HE6} -o ${LAN} -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 	
