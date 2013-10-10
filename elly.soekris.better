@@ -481,11 +481,11 @@ case "$1" in
     ${IPT} -A MY_TCP_LANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    #${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v4-access: "
-    ${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "lan_ssh-v4-access: "
+    ${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
     
-    #${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "lan_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "lan_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### DHCPD
 	#${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-67-v4-tcp-access: "
@@ -718,11 +718,11 @@ case "$1" in
     ${IPT} -A MY_TCP_WLANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    #${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v4-access: "
-    ${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "WLAN_ssh-v4-access: "
+    ${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
     
-    #${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "WLAN_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "WLAN_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_WLANv6 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### DHCPD
 	#${IPT} -A MY_TCP_WLANv4 -i ${WLAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "WLAN_dhcpd-67-v4-tcp-access: "
@@ -941,11 +941,11 @@ case "$1" in
     ${IPT} -A MY_TCP_KVMSv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v4-access: "
-    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "kvms_ssh-v4-access: "
+    ${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
     
-    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "kvms_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "kvms_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_KVMSv6 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### DHCPD
 	#${IPT} -A MY_TCP_KVMSv4 -i ${KVMS} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "kvms_dhcpd-67-v4-tcp-access: "
@@ -1341,7 +1341,7 @@ case "$1" in
     ${IPT} -A MY_TCP_OVPNTv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### ssh
-	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### log rest
 	#${IPT} -A MY_TCP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 tcp: "
@@ -1513,11 +1513,11 @@ case "$1" in
 	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
 
 ### SSH
-    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v4-access: "
-    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "HE6_ssh-v4-access: "
+    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
     
-	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "HE6_ssh-v6-access: "
-    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "HE6_ssh-v6-access: "
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### DNS
 	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "HE6_dns-v6-tcpp-access: "
