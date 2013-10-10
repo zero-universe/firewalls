@@ -349,6 +349,7 @@ case "$1" in
 	#${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
 	
 ### drop rest
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
     ${IPT} -A MY_UDP_WORLDv4 -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -j DROP
     
