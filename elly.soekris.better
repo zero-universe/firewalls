@@ -117,7 +117,7 @@ case "$1" in
 ### ipset
 	#${IPS} flush ${BADHOSTSLIST}
 	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
-	${IPS} restore ${BADHOSTSLIST} < /root/${BADHOSTSLIST}.bak
+	${IPS} restore < /root/${BADHOSTSLIST}.bak
 
 ########################### default policies ###########################
 
