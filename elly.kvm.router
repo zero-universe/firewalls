@@ -292,6 +292,12 @@ case "$1" in
 	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-tcp-546-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 546 -j ACCEPT
 
+### mariadb
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 3306 -j LOG --log-prefix "world_mariadb-v4-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 3306 -j ACCEPT
+	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 3306 -j LOG --log-prefix "world_mariadb-v6-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 3306 -j ACCEPT
+
 ### log rest
 	#${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
 	#${IPT6} -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
