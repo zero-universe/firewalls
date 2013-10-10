@@ -283,11 +283,11 @@ case "$1" in
     ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-	#${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
-    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+	#${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v4-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
     
-    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### DHCPv6-requests
 	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -s ${LAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "world_dhcpd-v6-tcp-547-access: "
