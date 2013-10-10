@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.08.01
+# modified 2013.10.10
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -17,6 +17,7 @@
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
+IPS=$(which ipset)
 WORLD="enp6s0"
 KVMS="br0"
 OVPN="tun0"
@@ -35,6 +36,8 @@ VMGW="192.168.133.254"
 HE6="hipv6"
 HE6NET="2001:470:1f0a:3c::/64"
 TFFM="216.66.80.30"
+
+BADHOSTSLIST="blackhole"
 
 case "$1" in
   start)
@@ -112,6 +115,11 @@ case "$1" in
     ${IPT6} -t mangle -X
     ${IPT6} -X
 
+### ipset
+	#${IPS} flush ${BADHOSTSLIST}
+	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
+	${IPS} restore ${BADHOSTSLIST} < /root/${BADHOSTSLIST}.bak
+
 ########################### default policies ###########################
 
     ${IPT} -P INPUT DROP
@@ -146,8 +154,7 @@ case "$1" in
 ### connection tracking for INPUT
     ${IPT} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
-	
+
 ###########################################################################################################################################################################################################
 ######################  nic for Internet:  WORLD  ######################
 ########################################################################
@@ -1284,6 +1291,11 @@ case "$1" in
     ${IPT6} -F
     ${IPT6} -t mangle -F
     ${IPT6} -t mangle -X
+
+### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
+	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    ${IPS} flush ${BADHOSTSLIST}
+    ${IPS} destroy ${BADHOSTSLIST}
 
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4

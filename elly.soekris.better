@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.08.04
+# last modified 2013.10.10
 # zero.universe@gmail.com
 #
 
@@ -15,6 +15,7 @@
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
+IPS=$(which ipset)
 WORLD="eth0"
 LAN="eth1"
 WLAN="eth2"
@@ -34,6 +35,8 @@ OVPNNET="192.168.111.0/24"
 OVPNTNET="192.168.112.0/24"
 TFFM="216.66.80.30"
 HE6NET="2001:470:1f0a:3c::/64"
+
+BADHOSTSLIST="blackhole"
 
 case "$1" in
   start)
@@ -110,6 +113,11 @@ case "$1" in
     ${IPT6} -t mangle -F
     ${IPT6} -t mangle -X
     ${IPT6} -X
+
+### ipset
+	#${IPS} flush ${BADHOSTSLIST}
+	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
+	${IPS} restore ${BADHOSTSLIST} < /root/${BADHOSTSLIST}.bak
 
 ########################### default policies ###########################
 
@@ -275,7 +283,7 @@ case "$1" in
     ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
 ### SSH
-    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
+	#${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
     ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
     #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
@@ -296,6 +304,7 @@ case "$1" in
 #	${IPT6} -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
 	
 ### drop rest
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
     ${IPT} -A MY_TCP_WORLDv4 -j DROP    
     ${IPT6} -A MY_TCP_WORLDv6 -j DROP    
     
@@ -1708,7 +1717,12 @@ case "$1" in
     ${IPT6} -t nat -F
     ${IPT6} -t nat -X
     ${IPT6} -F
-        
+
+### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
+	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    ${IPS} flush ${BADHOSTSLIST}
+    ${IPS} destroy ${BADHOSTSLIST}
+
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
 	${IPT} -X MY_ICMP_WORLDv4
