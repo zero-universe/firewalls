@@ -257,8 +257,11 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
 	
-###  drop stealth scans etc. ###
+### drop stealth scans etc. ###
 
 ### no flags
     ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ALL NONE -j DROP
@@ -303,8 +306,7 @@ case "$1" in
 	#${IPT6} -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
 	
 ### drop rest
-	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
-    ${IPT} -A MY_TCP_WORLDv4 -j DROP    
+	${IPT} -A MY_TCP_WORLDv4 -j DROP    
     ${IPT6} -A MY_TCP_WORLDv6 -j DROP    
     
 #----------------------------------------------------------------------#
@@ -325,6 +327,9 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	
+### drop unpolite networkers ;-)
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
 	
 ### proto 41
 	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
@@ -352,7 +357,6 @@ case "$1" in
 	#${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
 	
 ### drop rest
-	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
     ${IPT} -A MY_UDP_WORLDv4 -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -j DROP
 
