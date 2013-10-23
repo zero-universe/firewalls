@@ -265,9 +265,6 @@ case "$1" in
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
-### drop unpolite networkers :-)
-	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
-
 ### drop stealth scans etc. ###
 
 ### no flags
@@ -338,9 +335,6 @@ case "$1" in
 	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### drop unpolite networkers ;-)
-	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP	
-	
 ### dhcp4
     #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "world_dhcp-67-v4-udp-access: "
     ${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
