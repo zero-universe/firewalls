@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.10.23
+# last modified 2013.10.24
 # zero.universe@gmail.com
 #
 
@@ -409,12 +409,12 @@ case "$1" in
     ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements
-#    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
 
 ### router neighbor advertisements
-#    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_LANv6 -i ${LAN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
 
 ### mobile-ipv6
     #${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
@@ -435,9 +435,9 @@ case "$1" in
     #${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_LANv6 -j LOG --log-prefix "forbidden from lan v6 icmp: "
@@ -561,8 +561,6 @@ case "$1" in
 	#${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "lan_dhcpd-v4-68-udp-access: "
     ${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
 
-	#${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "lan_dhcpd-v6-udp-547-access: "
-    #${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT        
     #${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-udp-547-access: "
     ${IPT6} -A MY_UDP_LANv6 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
 
