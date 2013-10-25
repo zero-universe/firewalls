@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.10.24
+# last modified 2013.10.25
 # zero.universe@gmail.com
 #
 
@@ -644,12 +644,12 @@ case "$1" in
     ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements
-#    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
 
 ### router neighbor advertisements
-#    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_WLANv6 -i ${WLAN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
 
 ### mobile-ipv6
     #${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
@@ -660,19 +660,19 @@ case "$1" in
     ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
     #${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
     #${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_WLANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_WLANv6 -j LOG --log-prefix "forbidden from WLAN v6 icmp: "
@@ -867,12 +867,12 @@ case "$1" in
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements
-#    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
 
 ### router neighbor advertisements
-#    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
-#    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_KVMSv6 -i ${KVMS} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
 
 ### mobile-ipv6
     #${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
@@ -883,19 +883,19 @@ case "$1" in
     ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
     #${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
     #${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_KVMSv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_KVMSv6 -j LOG --log-prefix "forbidden from kvms v6 icmp: "
@@ -1121,19 +1121,19 @@ case "$1" in
     ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
     #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
     #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 icmp: "
@@ -1283,19 +1283,19 @@ case "$1" in
     ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
     #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
     #${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_OVPNTv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_OVPNTv6 -j LOG --log-prefix "forbidden from OVPNT v6 icmp: "
@@ -1684,7 +1684,7 @@ case "$1" in
 	${IPT6} -A FORWARD -i ${KVMS} -o ${WLAN} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 
 ### kvms -> hipv6
-	#${IPT6} -A FORWARD -i ${KVMS} -o ${HE6} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${KVMS} -o ${HE6} -s ${KVMSNET6} -m conntrack --ctstate NEW -j ACCEPT
 
 
 ##### OVPN+OVPNT #####
