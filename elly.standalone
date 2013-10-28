@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #
-# last modified 2013.10.10
+# last modified 2013.10.28
 # zero.universe@gmail.com
 #
 
@@ -99,7 +99,7 @@ case "$1" in
 ### ipset
 	#${IPS} flush ${BADHOSTSLIST}
 	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
-	${IPS} restore < /root/${BADHOSTSLIST}.bak
+	#${IPS} restore < /root/${BADHOSTSLIST}.bak
 
 ########################### default policies ###########################
 
@@ -155,6 +155,9 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
+### drop badhosts
+	#${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
+
 ### connection tracking
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         
@@ -203,10 +206,10 @@ case "$1" in
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
 
 ### Multicast groups + multicast listener
-    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
 
 ### Send - Certification Path Soli./Advert.
     #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
@@ -238,13 +241,13 @@ case "$1" in
     ${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
+### drop badhosts
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
+
 ### connection tracking
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### drop unpolite networkers ;-)
-	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
-	
 ### drop stealth scans etc. ###
 
 ### no flags
@@ -301,14 +304,14 @@ case "$1" in
     
     ${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP    
     
 ### connection tracking
 	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### drop unpolite networkers ;-)
-	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP    
-	
 ### proto 41
 	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
     
@@ -406,9 +409,9 @@ case "$1" in
     #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
 
 ### multicast router
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-    ${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    #${IPT6} -A MY_ICMP_OVPNv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
 
 ### log rest
 	#${IPT6} -A MY_ICMP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 icmp: "
@@ -753,9 +756,9 @@ case "$1" in
     ${IPT6} -t mangle -X
 
 ### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
-	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
-    ${IPS} flush ${BADHOSTSLIST}
-    ${IPS} destroy ${BADHOSTSLIST}
+	#${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    #${IPS} flush ${BADHOSTSLIST}
+    #${IPS} destroy ${BADHOSTSLIST}
     
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
