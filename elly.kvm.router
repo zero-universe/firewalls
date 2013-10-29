@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.10.10
+# modified 2013.10.29
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -171,6 +171,9 @@ case "$1" in
     
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
         
 ### connection tracking
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -253,14 +256,14 @@ case "$1" in
     
     ${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-        
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
+	        
 ### connection tracking
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-### drop unpolite networkers ;-)
-	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
-	
 ### drop stealth scans etc. ###
 
 ### no flags
@@ -323,13 +326,13 @@ case "$1" in
     
     ${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-    
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
+	    
 ### connection tracking
 	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
-### drop unpolite networkers ;-)
-	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
 	
 ### proto 41
 	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
