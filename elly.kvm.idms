@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
 
-# modified 2013.08.01
+# modified 2013.10.29
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host with 1 nic
@@ -14,6 +14,7 @@
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
+IPS=$(which ipset)
 WORLD="eth0"
 NAT="virbr0"
 ISOLY="virbr2"
@@ -21,6 +22,8 @@ MOD=$(which modprobe)
 INTLAN="192.168.4.0/24"
 ISOLYNET="192.168.200.0/24"
 NATNET="192.168.122.0/24"
+
+BADHOSTSLIST="blackhole"
 
 case "$1" in
   start)
@@ -97,7 +100,12 @@ case "$1" in
     ${IPT6} -t mangle -F
     ${IPT6} -t mangle -X
     ${IPT6} -X
-
+    
+### ipset
+	#${IPS} flush ${BADHOSTSLIST}
+	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
+	${IPS} restore < /root/${BADHOSTSLIST}.bak
+	
 ########################### default policies ###########################
 
     ${IPT} -P INPUT DROP
@@ -133,7 +141,6 @@ case "$1" in
     ${IPT} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-	
 ###########################################################################################################################################################################################################
 ######################  nic for Internet:  WORLD  ######################
 ########################################################################
@@ -150,6 +157,9 @@ case "$1" in
     
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
     
 ### connection tracking
     ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -233,6 +243,9 @@ case "$1" in
     ${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
     ${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
+### drop unpolite networkers ;-)
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
+
 ### connection tracking
 	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -267,9 +280,15 @@ case "$1" in
 	#${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
 
-### https
+### http(s)
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80 -j ACCEPT
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80 -j ACCEPT
     ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j ACCEPT
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j ACCEPT
+
+### tor
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -s 192.168.4.0/24 -m conntrack --ctstate NEW -p tcp --dport 9050 -j ACCEPT
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 9050 -j ACCEPT
 
 ### log rest
 	#${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
@@ -297,6 +316,9 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### drop unpolite networkers ;-)
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
 	    
 ### OPENVPN_V2
     #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
@@ -496,7 +518,7 @@ case "$1" in
 ### connection tracking
 	${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
-    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destiISOLYion-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "ISOLY_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
@@ -515,7 +537,7 @@ case "$1" in
 ### connection tracking
 	${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
-    ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type destiISOLYion-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
@@ -602,7 +624,7 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
-### web
+### ssh
     #${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "isoly_web-v4-access: "
     ${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
@@ -660,11 +682,11 @@ case "$1" in
 	${IPT} -A FORWARD -o ${WORLD} -s ${NATNET} -m conntrack --ctstate NEW -j ACCEPT
 
 ### lan -> world
-	${IPT} -A FORWARD -o ${WORLD} -s ${INTNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${WORLD} -s ${INTNET} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT6} -A FORWARD -o ${WORLD} -s ${INTNET6} -m conntrack --ctstate NEW -j ACCEPT
 
 ### lo -> world
-	${IPT} -A FORWARD -o ${WORLD} -s lo -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${WORLD} -s lo -m conntrack --ctstate NEW -j ACCEPT
 
 ### -> isoly
 	${IPT} -A FORWARD -o ${ISOLY} -s ${ISOLYNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -699,6 +721,11 @@ case "$1" in
     ${IPT6} -F
     ${IPT6} -t mangle -F
     ${IPT6} -t mangle -X
+
+### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
+	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    ${IPS} flush ${BADHOSTSLIST}
+    ${IPS} destroy ${BADHOSTSLIST}
     
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
