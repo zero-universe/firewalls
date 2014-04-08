@@ -1,7 +1,7 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #
-# last modified 2013.10.25
+# last modified 2014.01.24
 # zero.universe@gmail.com
 #
 
@@ -1691,6 +1691,7 @@ case "$1" in
 ### ovpn -> lan
 	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -i ${OVPNT} -o ${LAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -i ${OVPNT} -o ${WORLD} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
 
 	
 ### -> hipv6
