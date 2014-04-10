@@ -5,3 +5,4 @@ nft list tables
 
 nft list table filter
 
+nft list chain filter my_tcpv4
