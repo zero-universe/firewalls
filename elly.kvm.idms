@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.10.29
+# modified 2014.04.17
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host with 1 nic
@@ -141,6 +141,9 @@ case "$1" in
     ${IPT} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	${IPT6} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
+    ${IPT} -A INPUT -m conntrack --ctstate INVALID -j DROP
+    ${IPT6} -A INPUT -m conntrack --ctstate INVALID -j DROP
+
 ###########################################################################################################################################################################################################
 ######################  nic for Internet:  WORLD  ######################
 ########################################################################
@@ -155,14 +158,8 @@ case "$1" in
     ${IPT} -A INPUT -i ${WORLD} -p icmp -j MY_ICMP_WORLDv4
     ${IPT6} -A INPUT -i ${WORLD} -p icmpv6 -j MY_ICMP_WORLDv6
     
-    ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-
 ### drop unpolite networkers ;-)
 	${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
-    
-### connection tracking
-    ${IPT} -A MY_ICMP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
@@ -179,9 +176,6 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -j DROP
     
 ### MY_ICMP_WORLDv6
-
-### connection tracking
-	${IPT6} -A MY_ICMP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
@@ -239,16 +233,9 @@ case "$1" in
 ### WORLD tcp traffic goes to MY_TCP_WORLD
     ${IPT} -A INPUT -i ${WORLD} -p tcp -j MY_TCP_WORLDv4
     ${IPT6} -A INPUT -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
-    
-    ${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
 
 ### drop unpolite networkers ;-)
 	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
-
-### connection tracking
-	${IPT} -A MY_TCP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ###  drop stealth scans etc. ###
 
@@ -309,13 +296,6 @@ case "$1" in
 ### WORLD tcp traffic goes to MY_TCP_WORLD
     ${IPT} -A INPUT -i ${WORLD} -p udp -j MY_UDP_WORLDv4
     ${IPT6} -A INPUT -i ${WORLD} -p udp -j MY_UDP_WORLDv6
-    
-    ${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate INVALID -j DROP
-
-### connection tracking
-	${IPT} -A MY_UDP_WORLDv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_UDP_WORLDv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 ### drop unpolite networkers ;-)
 	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
@@ -349,13 +329,7 @@ case "$1" in
 ### NAT icmp traffic goes to MY_ICMP_NAT
     ${IPT} -A INPUT -i ${NAT} -p icmp -j MY_ICMP_NATv4
     ${IPT6} -A INPUT -i ${NAT} -p icmpv6 -j MY_ICMP_NATv6
-    
-    ${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
+
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "NAT_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
@@ -372,9 +346,6 @@ case "$1" in
     
 ### MY_ICMP_NATv6
 
-### connection tracking
-	${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
@@ -431,13 +402,6 @@ case "$1" in
 ### NAT tcp traffic goes to MY_TCP_WORLD
     ${IPT} -A INPUT -i ${NAT} -p tcp -j MY_TCP_NATv4
     ${IPT6} -A INPUT -i ${NAT} -p tcp -j MY_TCP_NATv6
-    
-    ${IPT} -A MY_ICMP_NATv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_NATv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_TCP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ###  drop stealth scans etc. ###
 
@@ -481,13 +445,6 @@ case "$1" in
 ### NAT UDP traffic goes to MY_UDP_NAT
     ${IPT} -A INPUT -i ${NAT} -p udp -j MY_UDP_NATv4
     ${IPT6} -A INPUT -i ${NAT} -p udp -j MY_UDP_NATv6
-    
-    ${IPT} -A MY_UDP_NATv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_UDP_NATv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_UDP_NATv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_UDP_NATv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	#${IPT} -A MY_UDP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 udp: "
@@ -511,12 +468,6 @@ case "$1" in
 ### ISOLY icmp traffic goes to MY_ICMP_ISOLY
     ${IPT} -A INPUT -i ${ISOLY} -p icmp -j MY_ICMP_ISOLYv4
     ${IPT6} -A INPUT -i ${ISOLY} -p icmpv6 -j MY_ICMP_ISOLYv6
-    
-    ${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "ISOLY_icmp-fragmentation-needed: "
@@ -533,9 +484,6 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -j DROP
     
 ### MY_ICMP_ISOLYv6
-
-### connection tracking
-	${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
@@ -593,13 +541,6 @@ case "$1" in
 ### ISOLY tcp traffic goes to MY_TCP_WORLD
     ${IPT} -A INPUT -i ${ISOLY} -p tcp -j MY_TCP_ISOLYv4
     ${IPT6} -A INPUT -i ${ISOLY} -p tcp -j MY_TCP_ISOLYv6
-    
-    ${IPT} -A MY_ICMP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_ICMP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_TCP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_TCP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ###  drop stealth scans etc. ###
 
@@ -647,13 +588,6 @@ case "$1" in
 ### ISOLY UDP traffic goes to MY_UDP_ISOLY
     ${IPT} -A INPUT -i ${ISOLY} -p udp -j MY_UDP_ISOLYv4
     ${IPT6} -A INPUT -i ${ISOLY} -p udp -j MY_UDP_ISOLYv6
-    
-    ${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate INVALID -j DROP
-    ${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate INVALID -j DROP
-    
-### connection tracking
-	${IPT} -A MY_UDP_ISOLYv4 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT6} -A MY_UDP_ISOLYv6 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 	
 ### log rest
 	#${IPT} -A MY_UDP_ISOLYv4 -j LOG --log-prefix "forbidden from ISOLY v4 udp: "
@@ -674,6 +608,11 @@ case "$1" in
 	#${IPT6} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
 	#${IPT} -t nat -A POSTROUTING -o ${KVMS} -j SNAT --to-source 192.168.99.254
     
+############### allow forwarding for exisitng connections ##############
+
+    ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
 ############################## forwarding ##############################    
     
 ### nics: world, nat, isoly
@@ -689,14 +628,10 @@ case "$1" in
 	#${IPT} -A FORWARD -o ${WORLD} -s lo -m conntrack --ctstate NEW -j ACCEPT
 
 ### -> isoly
-	${IPT} -A FORWARD -o ${ISOLY} -s ${ISOLYNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${ISOLY} -s ${ISOLYNET} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -o ${KVMS} -s ${ISOLY} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT6} -A FORWARD -o ${ISOLY} -m conntrack --ctstate NEW -j ACCEPT
 
-############### allow forwarding for exisitng connections ##############
-
-    ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
 ########################################################################
 ######################## end of rules ##################################
