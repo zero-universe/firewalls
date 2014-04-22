@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2014.04.17
+# modified 2014.04.22
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host with 1 nic
@@ -164,7 +164,8 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -182,7 +183,7 @@ case "$1" in
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
-    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements
@@ -333,7 +334,8 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "NAT_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "NAT_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -351,7 +353,7 @@ case "$1" in
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
-    ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT6} -A MY_ICMP_NATv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements
@@ -472,7 +474,8 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "ISOLY_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "ISOLY_icmp-echo-reply: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -490,7 +493,7 @@ case "$1" in
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
 
-    ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 80/minute -j ACCEPT
+    ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT6} -A MY_ICMP_ISOLYv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 ### router advertisements

@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2013.10.29
+# modified 2014.04.22
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -178,6 +178,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
@@ -315,7 +316,7 @@ case "$1" in
 	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
 	
 ### proto 41
-	${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
+	#${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
 	
 ### DHCP-requests
 	#${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "world_dhcpd-v6-udp-546-access: "
@@ -361,6 +362,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "kvms_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_KVMSv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "kvms_icmp-echo-reply: "
@@ -532,6 +534,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "OVPN_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_OVPNv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "OVPN_icmp-echo-reply: "
@@ -671,6 +674,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "HE6_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "HE6_icmp-echo-reply: "
@@ -824,6 +828,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "NAT_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_NATv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "NAT_icmp-echo-reply: "
@@ -963,6 +968,7 @@ case "$1" in
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "ISOLY_icmp-fragmentation-needed: "
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
     ${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
     #${IPT} -A MY_ICMP_ISOLYv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "ISOLY_icmp-echo-reply: "
