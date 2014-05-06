@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.04.24
+# last modified 2014.05.06
 # zero.universe@gmail.com
 #
 
@@ -50,6 +50,7 @@ case "$1" in
     ${MOD} ip_tables
     ${MOD} ip6table_filter
     ${MOD} ip6_tables
+    ${MOD} nf_nat_ftp
 
 ### Connection-Tracking-Module
     ${MOD} nf_conntrack
@@ -1460,7 +1461,17 @@ case "$1" in
 	${IPT} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
 	#${IPT6} -t nat -A POSTROUTING -o ${HE6} -j MASQUERADE
 	${IPT6} -t nat -A POSTROUTING -o ${HE6} -j SNAT --to-source 2001:470:1f0a:3c::2
-    
+
+############################ destination nat ###########################
+
+	# natting of port 21 on berry
+	${IPT} -t nat -A PREROUTING -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 20 -j DNAT --to-destination 192.168.77.24
+	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 21 -j DNAT --to-destination 192.168.77.24
+	${IPT} -t nat -A PREROUTING -i eth0 -p udp --dport 20 -j DNAT --to-destination 192.168.77.24
+	${IPT} -t nat -A PREROUTING -i eth0 -p udp --dport 21 -j DNAT --to-destination 192.168.77.24
+	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-destination 192.168.77.24
+
 ############################## forwarding ##############################    
 
 ############### allow forwarding for exisitng connections ##############
@@ -1477,9 +1488,15 @@ case "$1" in
     #${IPT6} -A FORWARD -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
     #${IPT6} -A FORWARD -i ${WORLD} -p udp -j MY_UDP_WORLDv6
 
+#### WORLD ####
+### world -> lan
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 20 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 21 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 80 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
 ##### LAN #####
 ### lan -> world
-	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 	#${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
 
