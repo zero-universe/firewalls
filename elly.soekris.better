@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.05.06
+# last modified 2014.05.07
 # zero.universe@gmail.com
 #
 
@@ -112,6 +112,8 @@ case "$1" in
 
     ${IPT6} -F
     ${IPT6} -t mangle -F
+	${IPT6} -t mangle -F
+    ${IPT6} -t nat -X
     ${IPT6} -t mangle -X
     ${IPT6} -X
 
@@ -1464,13 +1466,12 @@ case "$1" in
 
 ############################ destination nat ###########################
 
-	# natting of port 21 on berry
+	# natting for berry
 	${IPT} -t nat -A PREROUTING -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 20 -j DNAT --to-destination 192.168.77.24
-	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 21 -j DNAT --to-destination 192.168.77.24
-	${IPT} -t nat -A PREROUTING -i eth0 -p udp --dport 20 -j DNAT --to-destination 192.168.77.24
-	${IPT} -t nat -A PREROUTING -i eth0 -p udp --dport 21 -j DNAT --to-destination 192.168.77.24
-	${IPT} -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-destination 192.168.77.24
+	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 20 -j DNAT --to-destination 192.168.77.24:20
+	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 21 -j DNAT --to-destination 192.168.77.24:21
+	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 80 -j DNAT --to-destination 192.168.77.24:80
+	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 443 -j DNAT --to-destination 192.168.77.24:443
 
 ############################## forwarding ##############################    
 
@@ -1490,14 +1491,15 @@ case "$1" in
 
 #### WORLD ####
 ### world -> lan
-	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 20 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 21 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 80 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 20 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 21 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 80 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 443 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 
 ##### LAN #####
 ### lan -> world
-	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
-	#${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${LAN} -o ${WORLD} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
 
 ### lan -> wlan
