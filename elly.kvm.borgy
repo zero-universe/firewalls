@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2014.07.24
+# modified 2014.07.26
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host
@@ -173,7 +173,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${WORLD} -p icmpv6 -j MY_ICMP_WORLDv6
 
 ### drop unpolite networkers ;-)
-	${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
+	#${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
     
     ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
 	#${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
@@ -250,7 +250,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
 
 ### drop unpolite networkers ;-)
-	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
+	#${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
 
 ### drop stealth scans etc. ###
 
@@ -303,7 +303,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${WORLD} -p udp -j MY_UDP_WORLDv6
 
 ### drop unpolite networkers ;-)
-	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
+	#${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
 	
 ### proto 41
 	#${IPT} -A MY_UDP_WORLDv4 -s ${TFFM} -d 192.168.77.22 -m conntrack --ctstate NEW -p udp --dport 41 -j ACCEPT
@@ -796,23 +796,23 @@ case "$1" in
     ${IPT6} -X MY_UDP_OVPNv6
     
 ### HE6
-	${IPT} -F MY_ICMP_HE6v4
-	${IPT} -X MY_ICMP_HE6v4
+	#${IPT} -F MY_ICMP_HE6v4
+	#${IPT} -X MY_ICMP_HE6v4
 	
-    ${IPT6} -F MY_ICMP_HE6v6
-    ${IPT6} -X MY_ICMP_HE6v6
+    #${IPT6} -F MY_ICMP_HE6v6
+    #${IPT6} -X MY_ICMP_HE6v6
     
-    ${IPT} -F MY_TCP_HE6v4
-    ${IPT} -X MY_TCP_HE6v4
+    #${IPT} -F MY_TCP_HE6v4
+    #${IPT} -X MY_TCP_HE6v4
     
-    ${IPT6} -F MY_TCP_HE6v6
-    ${IPT6} -X MY_TCP_HE6v6
+    #${IPT6} -F MY_TCP_HE6v6
+    #${IPT6} -X MY_TCP_HE6v6
     
-    ${IPT} -F MY_UDP_HE6v4
-    ${IPT} -X MY_UDP_HE6v4
+    #${IPT} -F MY_UDP_HE6v4
+    #${IPT} -X MY_UDP_HE6v4
     
-    ${IPT6} -F MY_UDP_HE6v6
-    ${IPT6} -X MY_UDP_HE6v6
+    #${IPT6} -F MY_UDP_HE6v6
+    #${IPT6} -X MY_UDP_HE6v6
 
 ### delete tables
 	${IPT} -X
