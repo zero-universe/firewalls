@@ -1,0 +1,179 @@
+#!/usr/bin/nft -f
+
+#
+# last modified 2014.09.18
+# zero.universe@gmail.com
+#
+
+table filter {
+	
+	chain input	{ 
+		type filter hook input priority 0; 
+
+		# invalid connections
+		ct state invalid drop
+
+		# loopback interface
+		meta iif lo accept
+		
+		# established/related connections
+		ct state {established, related} accept
+
+		meta iif eth0 ip protocol tcp jump my_world_tcpv4
+		meta iif eth0 ip protocol udp jump my_world_udpv4
+		meta iif eth0 ip protocol icmp jump my_world_icmpv4
+		
+		meta iif {eth1, eth2, eth3, wlan0} ip protocol tcp jump my_tcpv4
+		meta iif {eth1, eth2, eth3, wlan0} ip protocol udp jump my_udpv4
+		meta iif {eth1, eth2, eth3, wlan0} ip protocol icmp accept
+
+		}
+		
+		
+	chain my_world_tcpv4 {
+		
+		# bad tcp -> avoid network scanning:
+        tcp flags & (fin|syn) == (fin|syn) drop
+        tcp flags & (syn|rst) == (syn|rst) drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+
+        # invalid connections
+		ct state invalid drop
+		
+		ct state {established, related} accept
+
+		# loopback interface
+		#meta iif lo accept
+
+		# open tcp ports: openvpn, sshd
+		meta iif eth0 tcp dport { 1195, 23235 } accept
+
+		# everything else
+		drop
+    
+        }
+	
+	
+	chain my_world_udpv4 {
+
+		# bad tcp -> avoid network scanning:
+        tcp flags & (fin|syn) == (fin|syn) drop
+        tcp flags & (syn|rst) == (syn|rst) drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+
+		# invalid connections
+		ct state invalid drop
+        
+		ct state {established, related} accept
+
+		# loopback interface
+		#meta iif lo accept
+        
+        # open tcp ports: openvpn, sshd
+		meta iif eth0 tcp dport { 1195, 23235 } accept
+
+		# everything else
+		drop
+    
+        }
+         
+            
+	chain my_world_icmpv4 {
+
+		# bad tcp -> avoid network scanning:
+        tcp flags & (fin|syn) == (fin|syn) drop
+        tcp flags & (syn|rst) == (syn|rst) drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+        
+		ct state {established, related} accept
+        
+        # invalid connections
+		ct state invalid drop
+
+		# loopback interface
+		#meta iif lo accept
+
+		meta iif eth0 icmp type { echo-request, echo-reply, destination-unreachable, fragmentation-needed, parameter-problem } counter accept
+		#meta iif eth0 icmp type echo-request accept
+		#meta iif eth0 icmp type echo-reply accept
+		#meta iif eth0 icmp type destination-unreachable accept
+		meta iif eth0 limit rate 6/second counter accept
+
+		# everything else
+		drop
+    
+        }
+
+
+
+
+
+
+
+	chain my_tcpv4 {
+		
+		# bad tcp -> avoid network scanning:
+        tcp flags & (fin|syn) == (fin|syn) drop
+        tcp flags & (syn|rst) == (syn|rst) drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		
+		ct state {established, related} accept
+
+        # invalid connections
+		ct state invalid drop
+
+		# loopback interface
+		#meta iif lo accept
+
+		# open tcp ports: openvpn, sshd
+		meta iif eth0 tcp dport { 53, 67, 68, 23235 } accept
+
+		# everything else
+		drop
+    
+        }
+	
+	
+	chain my_udpv4 {
+
+		# bad tcp -> avoid network scanning:
+        tcp flags & (fin|syn) == (fin|syn) drop
+        tcp flags & (syn|rst) == (syn|rst) drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+        
+		ct state {established, related} accept
+        
+        # invalid connections
+		ct state invalid drop
+
+		# loopback interface
+		#meta iif lo accept
+
+		# everything else
+		drop
+    
+        }
+         
+            
+
+	chain forward { 
+		type filter hook forward priority 0; 
+		}
+	
+	
+	chain output { 
+		type filter hook output priority 0; 
+		
+		#ct state {new, established, related} counter accept
+		
+		#meta iif ens3 tcp dport { 22, 53 } counter accept
+		#meta iif ens3 udp dport { 53 } counter accept
+		accept
+		}
+		
+}
