@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.04.05
+# last modified 2014.09.21
 # zero.universe@gmail.com
 #
 
@@ -14,9 +14,13 @@ MOD=$(which modprobe)
 
 # flush all rules in filter
 ${NFT} flush table filter
+${NFT} flush table nat
 #${NFT} flush table ip6 filter
 
 # delete everything in filter
+${NFT} delete chain filter my_world_tcpv4
+${NFT} delete chain filter my_world_udpv4
+${NFT} delete chain filter my_world_icmpv4
 ${NFT} delete chain filter my_tcpv4
 ${NFT} delete chain filter my_udpv4
 ${NFT} delete chain filter my_icmpv4
@@ -25,6 +29,16 @@ ${NFT} delete chain filter forward
 ${NFT} delete chain filter input
 ${NFT} delete table filter
 
+# delete everything in nat
+${NFT} delete chain nat prerouting
+${NFT} delete chain nat postrouting
+
+
+# ipv6
+
+#${NFT} delete chain ip6 filter my_world_tcpv6
+#${NFT} delete chain ip6 filter my_world_udpv6
+#${NFT} delete chain ip6 filter my_world_icmpv6
 #${NFT} delete chain ip6 filter my_tcpv6
 #${NFT} delete chain ip6 filter my_udpv6
 #${NFT} delete chain ip6 filter my_icmpv6
@@ -32,7 +46,6 @@ ${NFT} delete table filter
 #${NFT} delete chain ip6 filter forward
 #${NFT} delete chain ip6 filter input
 #${NFT} delete table ip6 filter
-
 
 
 exit 0

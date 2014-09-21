@@ -1,7 +1,7 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2014.09.18
+# last modified 2014.09.21
 # zero.universe@gmail.com
 #
 
@@ -23,9 +23,9 @@ table filter {
 		meta iif eth0 ip protocol udp jump my_world_udpv4
 		meta iif eth0 ip protocol icmp jump my_world_icmpv4
 		
-		meta iif {eth1, eth2, eth3, wlan0} ip protocol tcp jump my_tcpv4
-		meta iif {eth1, eth2, eth3, wlan0} ip protocol udp jump my_udpv4
-		meta iif {eth1, eth2, eth3, wlan0} ip protocol icmp accept
+		meta iif {eth1, eth3, wlan0} ip protocol tcp jump my_tcpv4
+		meta iif {eth1, eth3, wlan0} ip protocol udp jump my_udpv4
+		meta iif {eth1, eth3, wlan0} ip protocol icmp accept
 
 		}
 		
@@ -39,7 +39,7 @@ table filter {
         tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
         # invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 		
 		ct state {established, related} accept
 
@@ -64,7 +64,7 @@ table filter {
         tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
         
 		ct state {established, related} accept
 
@@ -108,11 +108,6 @@ table filter {
         }
 
 
-
-
-
-
-
 	chain my_tcpv4 {
 		
 		# bad tcp -> avoid network scanning:
@@ -149,7 +144,7 @@ table filter {
 		ct state {established, related} accept
         
         # invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
 		#meta iif lo accept
@@ -159,12 +154,6 @@ table filter {
     
         }
          
-            
-
-	chain forward { 
-		type filter hook forward priority 0; 
-		}
-	
 	
 	chain output { 
 		type filter hook output priority 0; 
@@ -174,6 +163,43 @@ table filter {
 		#meta iif ens3 tcp dport { 22, 53 } counter accept
 		#meta iif ens3 udp dport { 53 } counter accept
 		accept
+		
 		}
 		
+		
+	chain forward { 
+		type filter hook forward priority 0; 
+		
+		ct state {established, related} accept
+		
+		meta iif {eth1, eth2, wlan0} accept
+		
+		# everything else
+		drop
+		
+		}
+		
+}
+
+
+table nat {
+
+	chain prerouting {
+		type nat hook prerouting priority 0 \;
+		
+	}
+	
+
+	chain postrouting {
+		type nat hook postrouting priority 0 \;
+		
+		# snat
+		ip saddr 192.168.77.0/24 oif eth0 snat 1.2.3.4
+		ip saddr 192.168.88.0/24 oif eth0 snat 1.2.3.4
+		ip saddr 192.168.99.0/24 oif eth0 snat 1.2.3.4
+		
+	}
+
+	
+
 }
