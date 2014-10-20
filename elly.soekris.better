@@ -26,17 +26,24 @@ OVPNT="tun1"
 HE6="hipv6"
 
 MOD=$(which modprobe)
+
 LANNET="192.168.77.0/24"
 LANNET6="fd54:fc9a:8b7a:765e::/64"
+
 WLANNET="192.168.88.0/24"
 WLANNET6="fd55:fc9a:8b7a:765e::/64"
-WLANNET="192.168.222.0/24"
-WLANNET6="fd57:fc9a:8b7a:765e::/64"
+
+WLANGNET="192.168.222.0/24"
+WLANGNET6="fd57:fc9a:8b7a:765e::/64"
+
 KVMSNET="192.168.99.0/24"
 KVMSNET6="fd56:fc9a:8b7a:765e::/64"
+
 OVPNNET="192.168.111.0/24"
 OVPNTNET="192.168.112.0/24"
+
 TFFM="216.66.80.30"
+
 HE6NET="2001:470:1f0a:3c::/64"
 
 BADHOSTSLIST="blackhole"
@@ -1736,7 +1743,7 @@ case "$1" in
 ### world -> lan
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 20 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 21 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
-	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -d 192.168.77.21 -p tcp --dport 2222 -m conntrack --ctstate NEW -j ACCEPT
+	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 2222 -d 192.168.77.21 -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 80 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 443 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 
@@ -1757,6 +1764,10 @@ case "$1" in
 ### lan -> wlan
 	${IPT} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+### lan -> wlang
+	${IPT} -A FORWARD -i ${LAN} -o ${WLANG} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${LAN} -o ${WLANG} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 	
 ### lan -> kvms
 	${IPT} -A FORWARD -i ${LAN} -o ${KVMS} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
@@ -1789,6 +1800,13 @@ case "$1" in
 	#${IPT} -A FORWARD -i ${WLAN} -o ${HE6} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${WLAN} -o ${HE6} -s ${WLANNET6} -m conntrack --ctstate NEW -j ACCEPT
 
+
+##### WLANG #####
+### wlang -> world
+	#${IPT} -A FORWARD -i ${WLANG} -o ${WORLD} -s ${WLANGNET} -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	${IPT} -A FORWARD -i ${WLANG} -o ${WORLD} -s ${WLANGNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${WLANG} -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
+	
 
 ##### KVMS #####
 ### kvms -> world
