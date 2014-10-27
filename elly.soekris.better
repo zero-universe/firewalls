@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.10.20
+# last modified 2014.10.27
 # zero.universe@gmail.com
 #
 
@@ -783,7 +783,7 @@ case "$1" in
     ${IPT6} -A MY_UDP_WLANv6 -j DROP
 
 ###########################################################################################################################################################################################################
-######################  nic for intranet:  WWLANG  ######################
+######################  nic for intranet:  WLANG  ######################
 ########################################################################
 
 ### MY_ICMP_WLANG
@@ -1331,6 +1331,9 @@ case "$1" in
 ### URG but no ACK
     ${IPT} -A MY_TCP_OVPNv4 -p tcp --tcp-flags ACK,URG URG -j DROP
 
+### squid
+	${IPT} -A MY_TCP_OVPNv4 -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
+
 ### log rest
 	#${IPT} -A MY_TCP_OVPNv4 -j LOG --log-prefix "forbidden from OVPN v4 tcp: "
 	#${IPT6} -A MY_TCP_OVPNv6 -j LOG --log-prefix "forbidden from OVPN v6 tcp: "
@@ -1473,6 +1476,9 @@ case "$1" in
 
 ### ssh
 	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+### squid
+	${IPT} -A MY_TCP_OVPNTv4 -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
 
 ### log rest
 	#${IPT} -A MY_TCP_OVPNTv4 -j LOG --log-prefix "forbidden from OVPNT v4 tcp: "
@@ -1830,6 +1836,12 @@ case "$1" in
 	${IPT} -A FORWARD -i ${OVPN} -o ${LAN} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -i ${OVPNT} -o ${LAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
 
+
+##### OVPN+OVPNT #####
+### ovpn -> world
+	#${IPT} -A FORWARD -i ${OVPN} -o ${WORLD} -s ${OVPNNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -i ${OVPNT} -o ${LAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
+	
 	
 ### -> hipv6
 	#${IPT} -A FORWARD -o ${HE6} -s ${INTLAN} -m conntrack --ctstate NEW -j ACCEPT
