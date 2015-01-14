@@ -269,10 +269,16 @@ case "$1" in
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j ACCEPT
 
 ### SSH
-#    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v4-access: "
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -m mark --mark 1 -p tcp --dport 2222 -j ACCEPT
+
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v4-access: "
     ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v6-access: "
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
     
-#    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v6-access: "
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v6-access: "
     ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
 
 ### log rest
@@ -470,9 +476,7 @@ case "$1" in
 
     ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-############################## forwarding ##############################    
-    
+	
 ### nics: world, ovpn, he6
 
 ### nat -> world
@@ -494,7 +498,10 @@ case "$1" in
 #${IPT} -A POSTROUTING -o ${WORLD} -t nat -d ${TFFM} -p all -j SNAT --to-source 192.168.1.103
 
 ### kippo
+    ${IPT} -t mangle -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j MARK --set-mark 1
 	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j REDIRECT --to-port 2222
+	# ${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 127.0.0.1:2222
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 37.120.171.254:2222
 	
 ########################################################################
 
