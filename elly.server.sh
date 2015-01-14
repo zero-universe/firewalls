@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #
 # last modified 2015.01.14
@@ -256,6 +256,17 @@ case "$1" in
 
 ### URG but no ACK
     ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### web
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80 -j LOG --log-prefix "world_ssh-v4-access: "
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j LOG --log-prefix "world_ssh-v4-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80  -j ACCEPT
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443  -j ACCEPT
+    
+#    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80 -j LOG --log-prefix "world_ssh-v6-access: "
+#    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j LOG --log-prefix "world_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 80 -j ACCEPT
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 443 -j ACCEPT
 
 ### SSH
 #    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v4-access: "
