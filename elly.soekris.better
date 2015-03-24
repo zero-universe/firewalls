@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.10.27
+# last modified 2015.03.03
 # zero.universe@gmail.com
 #
 
@@ -47,6 +47,7 @@ TFFM="216.66.80.30"
 HE6NET="2001:470:1f0a:3c::/64"
 
 BADHOSTSLIST="blackhole"
+INTBAD="intbad"
 
 case "$1" in
   start)
@@ -129,8 +130,11 @@ case "$1" in
 
 ### ipset
 	#${IPS} flush ${BADHOSTSLIST}
-	#${IPS} create ${BADHOSTSLIST} hash:ip hashsize 4096
-	${IPS} restore < /root/${BADHOSTSLIST}.bak
+	#${IPS} create ${BADHOSTSLIST} hash:ip maxelem 200000 hashsize 4096
+	##${IPS} restore < /root/${BADHOSTSLIST}.bak
+	#${IPS} flush ${INTBAD}
+	#${IPS} create ${INTBAD} hash:mac hashsize 2048
+	##${IPS} restore < /root/${INTBAD}.bak
 
 ########################### default policies ###########################
 
@@ -141,6 +145,10 @@ case "$1" in
     ${IPT6} -P INPUT DROP
     ${IPT6} -P OUTPUT ACCEPT
     ${IPT6} -P FORWARD DROP
+
+
+### drop traffic of blocked hosts from inside
+	${IPT} -A FORWARD -i ${LAN} -m set --match-set ${INTBAD} src -j DROP
 
 ###################### allow loopback networking #######################
 
@@ -383,7 +391,11 @@ case "$1" in
 	
 ### standard policy	
     ${IPT} -A MY_ICMP_LANv4 -j DROP
-    
+
+### drop badhosts
+	${IPT} -A MY_ICMP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p icmp -j DROP
+	${IPT} -A MY_ICMP_LANv6 -i ${LAN} -m set --match-set ${INTBAD} src -p icmpv6 -j DROP
+
 ### MY_ICMP_LANv6
 	
     ${IPT6} -A MY_ICMP_LANv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
@@ -442,7 +454,10 @@ case "$1" in
 ### LAN tcp traffic goes to MY_TCP_WORLD
     ${IPT} -A INPUT -i ${LAN} -p tcp -j MY_TCP_LANv4
     ${IPT6} -A INPUT -i ${LAN} -p tcp -j MY_TCP_LANv6
-	
+
+### drop badhosts
+	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p tcp -j DROP
+
 ###  drop stealth scans etc. ###
 
 ### no flags
@@ -529,6 +544,9 @@ case "$1" in
 ### LAN UDP traffic goes to MY_UDP_LAN
     ${IPT} -A INPUT -i ${LAN} -p udp -j MY_UDP_LANv4
     ${IPT6} -A INPUT -i ${LAN} -p udp -j MY_UDP_LANv6
+
+### drop badhosts
+	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p udp -j DROP
 
 ### DHCPD
 	#${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-67-udp-access: "
@@ -1727,7 +1745,7 @@ case "$1" in
 	
 	# natting for kippo ;-)
 	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 192.168.99.117:2222
-	${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 192.168.77.21:2222
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 192.168.77.21:2222
 
 ############################## forwarding ##############################    
 
@@ -1749,7 +1767,7 @@ case "$1" in
 ### world -> lan
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 20 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 21 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
-	${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 2222 -d 192.168.77.21 -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 2222 -d 192.168.77.21 -m conntrack --ctstate NEW -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 80 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 	#${IPT} -A FORWARD -i ${WORLD} -o ${LAN} -p tcp --dport 443 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 
@@ -1874,9 +1892,13 @@ case "$1" in
     ${IPT6} -F
 
 ### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
-	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
-    ${IPS} flush ${BADHOSTSLIST}
-    ${IPS} destroy ${BADHOSTSLIST}
+	#${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    #${IPS} flush ${BADHOSTSLIST}
+    #${IPS} destroy ${BADHOSTSLIST}
+
+	#${IPS} save ${INTBAD} > /root/${INTBAD}.bak
+    #${IPS} flush ${INTBAD}
+    #${IPS} destroy ${INTBAD}
 
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
