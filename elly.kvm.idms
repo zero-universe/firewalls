@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# modified 2014.04.22
+# last modified 2015.09.21
 # zero.universe@gmail.com
 #
 # iptables for a kvm-host with 1 nic
@@ -39,10 +39,10 @@ case "$1" in
     ${MOD} ip6_tables
 
 ### Connection-Tracking-Module
-    ${MOD} nf_conntrack
-    ${MOD} nf_conntrack_ipv6
-    ${MOD} nf_conntrack_irc
-    ${MOD} nf_conntrack_ftp
+    ${MOD} nf_conntrack nf_conntrack_helper=0
+#    ${MOD} nf_conntrack_ipv6
+#    ${MOD} nf_conntrack_irc
+#    ${MOD} nf_conntrack_ftp
 
 ############################ proc-settings #############################
 
@@ -86,6 +86,9 @@ case "$1" in
 ### deactivate source route
 	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
 	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+
+### no helper
+	echo 0 > /proc/sys/net/netfilter/nf_conntrack_helper
 
 ############################ cleanup tables ############################
 
@@ -240,26 +243,29 @@ case "$1" in
 	
 ###  drop stealth scans etc. ###
 
-### no flags
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ALL NONE -j DROP
+#### no flags
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ALL NONE -j DROP
 
-### SYN and FIN flags
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+#### SYN and FIN flags
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
 
-### SYN and RST flags at the same time
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+#### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
 
-### FIN and RST flags at the same time
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+#### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
 
-### FIN but no ACK
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+#### FIN but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
 
-### PSH but no ACK
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+#### PSH but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
 
-### URG but no ACK
-    ${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+#### URG but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
 
 ### SSH
     #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "world_ssh-v4-access: "
@@ -407,26 +413,29 @@ case "$1" in
 	
 ###  drop stealth scans etc. ###
 
-### no flags
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ALL NONE -j DROP
+#### no flags
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ALL NONE -j DROP
 
-### SYN and FIN flags
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+#### SYN and FIN flags
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
 
-### SYN and RST flags at the same time
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+#### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
 
-### FIN and RST flags at the same time
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+#### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
 
-### FIN but no ACK
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+#### FIN but no ACK
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
 
-### PSH but no ACK
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+#### PSH but no ACK
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
 
-### URG but no ACK
-    ${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+#### URG but no ACK
+    #${IPT} -A MY_TCP_NATv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_NATv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
 
 ### log rest
 	#${IPT} -A MY_TCP_NATv4 -j LOG --log-prefix "forbidden from NAT v4 tcp: "
@@ -547,26 +556,29 @@ case "$1" in
 	
 ###  drop stealth scans etc. ###
 
-### no flags
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ALL NONE -j DROP
+#### no flags
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ALL NONE -j DROP
 
-### SYN and FIN flags
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+#### SYN and FIN flags
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
 
-### SYN and RST flags at the same time
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+#### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
 
-### FIN and RST flags at the same time
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+#### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
 
-### FIN but no ACK
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+#### FIN but no ACK
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
 
-### PSH but no ACK
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+#### PSH but no ACK
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
 
-### URG but no ACK
-    ${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+#### URG but no ACK
+    #${IPT} -A MY_TCP_ISOLYv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_ISOLYv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
 
 ### ssh
     #${IPT} -A MY_TCP_ISOLYv4 -i ${ISOLY} -m conntrack --ctstate NEW -p tcp --dport 22 -j LOG --log-prefix "isoly_web-v4-access: "

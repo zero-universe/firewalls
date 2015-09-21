@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# last modified 2014.04.16
+# last modified 2015.09.21
 # zero.universe@gmail.com
 #
 
@@ -52,10 +52,10 @@ case "$1" in
     ${MOD} ip6_tables
 
 ### Connection-Tracking-Module
-    ${MOD} nf_conntrack
-    ${MOD} nf_conntrack_ipv6
-    ${MOD} nf_conntrack_irc
-    ${MOD} nf_conntrack_ftp
+    ${MOD} nf_conntrack nf_conntrack_helper=0
+#    ${MOD} nf_conntrack_ipv6
+#    ${MOD} nf_conntrack_irc
+#    ${MOD} nf_conntrack_ftp
 
 ############################ proc-settings #############################
 
@@ -99,6 +99,9 @@ case "$1" in
 ### deactivate source route
 	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
 	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+
+### no helper
+	echo 0 > /proc/sys/net/netfilter/nf_conntrack_helper
 
 ############################ cleanup tables ############################
 
