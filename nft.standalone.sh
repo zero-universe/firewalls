@@ -36,8 +36,8 @@ table filter {
 		# loopback interface
 		meta iif lo accept
 
-		# open tcp ports: sshd (22)
-		meta iif ens3 tcp dport { 22 } counter accept
+		# open tcp ports: sshd (23235)
+		meta iif ens3 tcp dport { 23235 } counter accept
 
 		# everything else
 		reject
