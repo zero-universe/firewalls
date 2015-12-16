@@ -133,12 +133,12 @@ case "$1" in
     ${IPT6} -X
 
 ### ipset
-	${IPS} flush ${BADHOSTSLIST}
+	#${IPS} flush ${BADHOSTSLIST}
 	#${IPS} create ${BADHOSTSLIST} hash:ip maxelem 200000 hashsize 4096
 	${IPS} restore < /root/${BADHOSTSLIST}.bak
-	${IPS} flush ${INTBAD}
+	#${IPS} flush ${INTBAD}
 	#${IPS} create ${INTBAD} hash:mac hashsize 2048
-	${IPS} restore < /root/${INTBAD}.bak
+	#${IPS} restore < /root/${INTBAD}.bak
 
 ########################### default policies ###########################
 
@@ -152,7 +152,7 @@ case "$1" in
 
 
 ### drop traffic of blocked hosts from inside
-	${IPT} -A FORWARD -i ${LAN} -m set --match-set ${INTBAD} src -j DROP
+#	${IPT} -A FORWARD -i ${LAN} -m set --match-set ${INTBAD} src -j DROP
 
 ###################### allow loopback networking #######################
 
@@ -397,8 +397,8 @@ case "$1" in
     ${IPT} -A MY_ICMP_LANv4 -j DROP
 
 ### drop badhosts
-	${IPT} -A MY_ICMP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p icmp -j DROP
-	${IPT} -A MY_ICMP_LANv6 -i ${LAN} -m set --match-set ${INTBAD} src -p icmpv6 -j DROP
+#	${IPT} -A MY_ICMP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p icmp -j DROP
+#	${IPT} -A MY_ICMP_LANv6 -i ${LAN} -m set --match-set ${INTBAD} src -p icmpv6 -j DROP
 
 ### MY_ICMP_LANv6
 	
@@ -460,7 +460,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${LAN} -p tcp -j MY_TCP_LANv6
 
 ### drop badhosts
-	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p tcp -j DROP
+#	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p tcp -j DROP
 
 ###  drop stealth scans etc. ###
 
@@ -521,6 +521,9 @@ case "$1" in
 ### squid
 	${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
 
+### darkstat
+#	${IPT} -A MY_TCP_LANv4 -s ${LAN} -m conntrack --ctstate NEW -p tcp --dport 6969 -j ACCEPT
+
 ### TOR 
 	#${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "lan_tor-v4-tcp-access: "
     ${IPT} -A MY_TCP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
@@ -553,7 +556,7 @@ case "$1" in
     ${IPT6} -A INPUT -i ${LAN} -p udp -j MY_UDP_LANv6
 
 ### drop badhosts
-	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p udp -j DROP
+#	${IPT} -A MY_UDP_LANv4 -i ${LAN} -m set --match-set ${INTBAD} src -p udp -j DROP
 
 ### DHCPD
 	#${IPT} -A MY_UDP_LANv4 -i ${LAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-67-udp-access: "
@@ -1784,7 +1787,7 @@ case "$1" in
 ### lan -> openvpn(t)
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT} -A FORWARD -i ${LAN} -o ${OVPNT} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${LAN} -o ${OVPNT} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${LAN} -o ${OVPNT} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 		
 
 ##### WLAN #####
@@ -1879,9 +1882,9 @@ case "$1" in
     ${IPS} flush ${BADHOSTSLIST}
     ${IPS} destroy ${BADHOSTSLIST}
 
-	${IPS} save ${INTBAD} > /root/${INTBAD}.bak
-    ${IPS} flush ${INTBAD}
-    ${IPS} destroy ${INTBAD}
+	#${IPS} save ${INTBAD} > /root/${INTBAD}.bak
+    #${IPS} flush ${INTBAD}
+    #${IPS} destroy ${INTBAD}
 
 ### WORLD
 	${IPT} -F MY_ICMP_WORLDv4
