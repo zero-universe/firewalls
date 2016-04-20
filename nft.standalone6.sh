@@ -10,6 +10,9 @@ table ip6 filter {
 	chain input	{ 
 		type filter hook input priority 0; policy drop; 
 		
+		# invalid connections
+		ct state invalid drop
+
 		# established/related connections
 		ct state {established, related} accept
 		
@@ -25,22 +28,23 @@ table ip6 filter {
 		# bad tcp -> avoid network scanning:
         meta iif wlp2s0 tcp flags & (fin|syn) == (fin|syn) drop
         meta iif wlp2s0 tcp flags & (syn|rst) == (syn|rst) drop
-        meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        #meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
+        meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop #would be better, not supported yet.
         meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 		
 		meta iif wlp2s0 ct state {established, related} accept
         
         # invalid connections
-		meta iif wlp2s0 ct state invalid drop
+		#meta iif wlp2s0 ct state invalid drop
 
 		# loopback interface
 		meta iif lo accept
 
 		# open tcp ports: sshd (22)
-		meta iif wlp2s0 tcp dport { 22 } counter accept
+		meta iif wlp2s0 tcp dport { 23235 } counter accept
 
 		# everything else
-		drop	
+		#drop	
     
         }
 	
@@ -49,13 +53,13 @@ table ip6 filter {
 		ct state {established, related} accept
         
         # invalid connections
-		meta iif wlp2s0 ct state invalid drop
+		#meta iif wlp2s0 ct state invalid drop
 
 		# loopback interface
 		meta iif lo accept
 
 		# everything else
-		drop
+		#drop
     
         }
          
@@ -77,13 +81,13 @@ table ip6 filter {
 		#meta iif wlp2s0 ip6 nexthdr icmpv6 accept
 
 		# everything else
-		drop
+		#drop
     
         }
 	
 	
 	chain forward { 
-		type filter hook forward priority 0; 
+		type filter hook forward priority 0; policy drop;
 		}
 	
 	
