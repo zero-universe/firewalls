@@ -1,21 +1,24 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2014.04.05
+# last modified 2016.04.20
 # zero.universe@gmail.com
 #
 
 table filter {
 	
 	chain input	{ 
-		type filter hook input priority 0; 
-		
+		type filter hook input priority 0; policy drop;
+
+	    # invalid connections
+		ct state invalid drop
+	
 		# established/related connections
 		ct state {established, related} accept
 		
-		ip protocol tcp jump my_tcpv4
-		ip protocol udp jump my_udpv4
-		ip protocol icmp jump my_icmpv4
+		ip protocol tcp goto my_tcpv4
+		ip protocol udp goto my_udpv4
+		ip protocol icmp goto my_icmpv4
 
 		}
 		
@@ -40,7 +43,7 @@ table filter {
 		meta iif ens3 tcp dport { 23235 } counter accept
 
 		# everything else
-		reject
+		drop
     
         }
 	
@@ -55,7 +58,7 @@ table filter {
 		meta iif lo accept
 
 		# everything else
-		reject
+		drop
     
         }
          
@@ -76,13 +79,13 @@ table filter {
 		meta iif ens3 limit rate 10/second counter accept
 
 		# everything else
-		reject
+		drop
     
         }
 	
 	
 	chain forward { 
-		type filter hook forward priority 0; 
+		type filter hook forward priority 0;
 		}
 	
 	

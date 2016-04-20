@@ -1,21 +1,21 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2014.04.05
+# last modified 2016.04.20
 # zero.universe@gmail.com
 #
 
 table ip6 filter {
 	
 	chain input	{ 
-		type filter hook input priority 0; 
+		type filter hook input priority 0; policy drop; 
 		
 		# established/related connections
 		ct state {established, related} accept
 		
-		ip6 protocol tcp jump my_tcpv6
-		ip6 protocol udp jump my_udpv6
-		ip6 protocol icmpv6 jump my_icmpv6
+		ip6 protocol tcp goto my_tcpv6
+		ip6 protocol udp goto my_udpv6
+		ip6 protocol icmpv6 goto my_icmpv6
 
 		}
 		
@@ -40,7 +40,7 @@ table ip6 filter {
 		meta iif wlp2s0 tcp dport { 22 } counter accept
 
 		# everything else
-		reject
+		drop	
     
         }
 	
@@ -55,7 +55,7 @@ table ip6 filter {
 		meta iif lo accept
 
 		# everything else
-		reject
+		drop
     
         }
          
@@ -77,7 +77,7 @@ table ip6 filter {
 		#meta iif wlp2s0 ip6 nexthdr icmpv6 accept
 
 		# everything else
-		reject
+		drop
     
         }
 	
@@ -88,8 +88,7 @@ table ip6 filter {
 	
 	
 	chain output { 
-		type filter hook output priority 0; 
-		accept
+		type filter hook output priority 0; policy accept;
 		}
 		
 }

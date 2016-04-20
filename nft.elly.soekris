@@ -1,14 +1,14 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2014.09.21
+# last modified 2016.04.20
 # zero.universe@gmail.com
 #
 
 table filter {
 	
 	chain input	{ 
-		type filter hook input priority 0; 
+		type filter hook input priority 0; policy drop; 
 
 		# invalid connections
 		ct state invalid drop
@@ -19,12 +19,12 @@ table filter {
 		# established/related connections
 		ct state {established, related} accept
 
-		meta iif eth0 ip protocol tcp jump my_world_tcpv4
-		meta iif eth0 ip protocol udp jump my_world_udpv4
-		meta iif eth0 ip protocol icmp jump my_world_icmpv4
+		meta iif eth0 ip protocol tcp drop my_world_tcpv4
+		meta iif eth0 ip protocol udp drop my_world_udpv4
+		meta iif eth0 ip protocol icmp drop my_world_icmpv4
 		
-		meta iif {eth1, eth3, wlan0} ip protocol tcp jump my_tcpv4
-		meta iif {eth1, eth3, wlan0} ip protocol udp jump my_udpv4
+		meta iif {eth1, eth3, wlan0} ip protocol tcp drop my_tcpv4
+		meta iif {eth1, eth3, wlan0} ip protocol udp drop my_udpv4
 		meta iif {eth1, eth3, wlan0} ip protocol icmp accept
 
 		}
@@ -185,13 +185,13 @@ table filter {
 table nat {
 
 	chain prerouting {
-		type nat hook prerouting priority 0 \;
+		type nat hook prerouting priority 0;
 		
 	}
 	
 
 	chain postrouting {
-		type nat hook postrouting priority 0 \;
+		type nat hook postrouting priority 0;
 		
 		# snat
 		ip saddr 192.168.77.0/24 oif eth0 snat 1.2.3.4
