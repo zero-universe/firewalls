@@ -34,8 +34,8 @@ table filter {
        	# loopback interface
 		iif lo accept
 
-		# open tcp ports: sshd (23235)
-		iif ens3 tcp dport { 80,443,23235 } counter accept
+		# open tcp ports
+		iif ens3 tcp dport { 25,80,443,993,5222,23235 } counter accept
     
         }
 	

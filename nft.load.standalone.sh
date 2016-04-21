@@ -17,8 +17,8 @@ for a in ${MODS}; do ${MOD} ${a};done
 ############################ proc-settings #############################
 
 ### activate forwarding
-    echo 1 > /proc/sys/net/ipv4/ip_forward
-    echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+    echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
 
 ### Max. 500/second (5/Jiffie)
     echo 10 > /proc/sys/net/ipv4/icmp_ratelimit
@@ -64,10 +64,15 @@ for a in ${MODS}; do ${MOD} ${a};done
 
 # flush all rules in filter
 ${NFT} flush table filter
+${NFT} flush table ip6 filter
 ${NFT} flush table nat
-#${NFT} flush table ip6 filter
+${NFT} flush table ip6 nat
+
+
 
 # delete everything in filter
+
+# ipv4
 ${NFT} delete chain filter my_world_tcpv4
 ${NFT} delete chain filter my_world_udpv4
 ${NFT} delete chain filter my_world_icmpv4
@@ -79,24 +84,21 @@ ${NFT} delete chain filter forward
 ${NFT} delete chain filter input
 ${NFT} delete table filter
 
+# ipv6
+${NFT} delete chain ip6 filter my_world_tcpv6
+${NFT} delete chain ip6 filter my_world_udpv6
+${NFT} delete chain ip6 filter my_world_icmpv6
+${NFT} delete chain ip6 filter my_tcpv6
+${NFT} delete chain ip6 filter my_udpv6
+${NFT} delete chain ip6 filter my_icmpv6
+${NFT} delete chain ip6 filter output
+${NFT} delete chain ip6 filter forward
+${NFT} delete chain ip6 filter input
+${NFT} delete table ip6 filter
+
 # delete everything in nat
 ${NFT} delete chain nat prerouting
 ${NFT} delete chain nat postrouting
 ${NFT} delete table nat
-
-
-# ipv6
-
-#${NFT} delete chain ip6 filter my_world_tcpv6
-#${NFT} delete chain ip6 filter my_world_udpv6
-#${NFT} delete chain ip6 filter my_world_icmpv6
-#${NFT} delete chain ip6 filter my_tcpv6
-#${NFT} delete chain ip6 filter my_udpv6
-#${NFT} delete chain ip6 filter my_icmpv6
-#${NFT} delete chain ip6 filter output
-#${NFT} delete chain ip6 filter forward
-#${NFT} delete chain ip6 filter input
-#${NFT} delete table ip6 filter
-
 
 exit 0
