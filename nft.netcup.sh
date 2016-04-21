@@ -35,7 +35,7 @@ table filter {
 		iif lo accept
 
 		# open tcp ports
-		iif ens3 tcp dport { 25,80,143,443,587,993,5222,23235 } counter accept
+		iif ens3 tcp dport { 22,25,80,143,443,587,993,5222,23235 } counter accept
     
         }
 	
@@ -85,11 +85,11 @@ table nat {
 			counter
 			iif ens3 tcp dport 22 redirect to 2222
 			
-		}
+			}
 
         chain postrouting {
 			
 			type nat hook postrouting priority -150;
 			
-		}
+			}
 }
