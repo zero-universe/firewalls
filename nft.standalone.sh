@@ -34,7 +34,7 @@ table filter {
        	# loopback interface
 		iif lo accept
 
-		# open tcp ports: sshd (23235)
+		# open tcp ports: http,https,sec
 		iif ens3 tcp dport { 80,443,23235 } counter accept
     
         }
@@ -79,7 +79,6 @@ table filter {
 table nat {
 	
         chain prerouting {
-			
 			type nat hook prerouting priority -150;
 
 			iif ens3 tcp dport 22 redirect to 2222
@@ -87,7 +86,6 @@ table nat {
 		}
 
         chain postrouting {
-			
 			type nat hook postrouting priority -150;
 			
 		}

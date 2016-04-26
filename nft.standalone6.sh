@@ -26,22 +26,16 @@ table ip6 filter {
 	chain my_tcpv6 {
 		
 		# bad tcp -> avoid network scanning:
-        meta iif wlp2s0 tcp flags & (fin|syn) == (fin|syn) drop
-        meta iif wlp2s0 tcp flags & (syn|rst) == (syn|rst) drop
-        #meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) < (fin) drop # == 0 would be better, not supported yet.
-        meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop #would be better, not supported yet.
-        meta iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+        iif wlp2s0 tcp flags & (fin|syn) == (fin|syn) drop
+        iif wlp2s0 tcp flags & (syn|rst) == (syn|rst) drop
+        iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
+        iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 		
-		meta iif wlp2s0 ct state {established, related} accept
-        
-        # invalid connections
-		#meta iif wlp2s0 ct state invalid drop
-
 		# loopback interface
-		meta iif lo accept
+		iif lo accept
 
-		# open tcp ports: sshd (22)
-		meta iif wlp2s0 tcp dport { 23235 } counter accept
+		# open tcp ports: sec
+		iif wlp2s0 tcp dport { 23235 } counter accept
 
 		# everything else
 		#drop	
@@ -52,36 +46,22 @@ table ip6 filter {
 	chain my_udpv6 {
 		ct state {established, related} accept
         
-        # invalid connections
-		#meta iif wlp2s0 ct state invalid drop
-
 		# loopback interface
-		meta iif lo accept
-
-		# everything else
-		#drop
+		iif lo accept
     
         }
          
             
 	chain my_icmpv6 {
-		meta iif wlp2s0 ct state {established, related} accept
+		iif wlp2s0 ct state {established, related} accept
         
         # invalid connections
-		meta iif wlp2s0 ct state invalid drop
+		iif wlp2s0 ct state invalid drop
 
 		# loopback interface
-		meta iif lo accept
+		iif lo accept
 
-		meta iif wlp2s0 ipv6-icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } accept
-		#meta iif wlp2s0 icmpv6 type echo-request accept
-		#meta iif wlp2s0 icmpv6 type echo-reply accept
-		#meta iif wlp2s0 icmpv6 type destination-unreachable accept
-		#meta iif wlp2s0 limit rate 5/second counter accept
-		#meta iif wlp2s0 ip6 nexthdr icmpv6 accept
-
-		# everything else
-		#drop
+		iif wlp2s0 ipv6-icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } accept
     
         }
 	

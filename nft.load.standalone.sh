@@ -17,8 +17,8 @@ for a in ${MODS}; do ${MOD} ${a};done
 ############################ proc-settings #############################
 
 ### activate forwarding
-    echo 0 > /proc/sys/net/ipv4/ip_forward
-    echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 
 ### Max. 500/second (5/Jiffie)
     echo 10 > /proc/sys/net/ipv4/icmp_ratelimit

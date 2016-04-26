@@ -41,6 +41,7 @@ table filter {
 	
 	
 	chain my_udpv4 {
+		
 		ct state {established, related} accept
 
    		# loopback interface
@@ -50,6 +51,7 @@ table filter {
          
             
 	chain my_icmpv4 {
+		
 		ct state {established, related} accept
         
 		# loopback interface
