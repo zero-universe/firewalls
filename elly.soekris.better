@@ -19,7 +19,6 @@ IPS=$(which ipset)
 WORLD="eth0"
 LAN="eth1"
 WLAN="wlan0"
-NALW="wlan1"
 WLANG="eth2"
 KVMS="eth3"
 OVPN="tun0"
@@ -33,8 +32,6 @@ LANNET6="fd54:fc9a:8b7a:765e::/64"
 
 WLANNET="192.168.88.0/24"
 WLANNET6="fd55:fc9a:8b7a:765e::/64"
-
-NALWNET="192.168.11.0/24"
 
 WLANGNET="192.168.222.0/24"
 WLANGNET6="fd57:fc9a:8b7a:765e::/64"
@@ -1005,209 +1002,6 @@ case "$1" in
 
 
 ###########################################################################################################################################################################################################
-########################  nic for wifi:  NALW  #########################
-########################################################################
-
-### MY_NALW Chain
-    
-### create MY_ICMP_NALW rules
-	${IPT} -N MY_ICMP_NALWv4
-	${IPT6} -N MY_ICMP_NALWv6
-
-### NALW icmp traffic goes to MY_ICMP_NALW
-    ${IPT} -A INPUT -i ${NALW} -p icmp -j MY_ICMP_NALWv4
-    ${IPT6} -A INPUT -i ${NALW} -p icmpv6 -j MY_ICMP_NALWv6
-	
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
-    #${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "NALW_icmp-fragmentation-needed: "
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-    #${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "NALW_icmp-echo-reply: "
-    ${IPT} -A MY_ICMP_NALWv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-### log rest 
-	#${IPT} -A MY_ICMP_NALWv4 -j LOG --log-prefix "forbidden from NALW v4 icmp: "
-	
-### standard policy	
-    ${IPT} -A MY_ICMP_NALWv4 -j DROP
-    
-### MY_ICMP_NALWv6
-	
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
-
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
-
-### router advertisements
-    ${IPT6} -A MY_ICMP_NALWv6 -i ${NALW} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -i ${NALW} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
-
-### router neighbor advertisements
-    ${IPT6} -A MY_ICMP_NALWv6 -i ${NALW} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -i ${NALW} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
-
-### mobile-ipv6
-    #${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
-    #${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
-
-### Inverse Neighbor Discovery
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
-    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
-
-### Multicast groups + multicast listener
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
-
-### Send - Certification Path Soli./Advert.
-    #${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
-    #${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
-
-### multicast router
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
-#    ${IPT6} -A MY_ICMP_NALWv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
-
-### log rest
-	#${IPT6} -A MY_ICMP_NALWv6 -j LOG --log-prefix "forbidden from NALW v6 icmp: "
-	
-### standard policy	
-    ${IPT6} -A MY_ICMP_NALWv6 -j DROP
-    
-#----------------------------------------------------------------------#
-    
-### MY_TCP_NALW
-
-### create MY_TCP_NALW rules
-	${IPT} -N MY_TCP_NALWv4
-	${IPT6} -N MY_TCP_NALWv6
-
-### NALW tcp traffic goes to MY_TCP_WORLD
-    ${IPT} -A INPUT -i ${NALW} -p tcp -j MY_TCP_NALWv4
-    ${IPT6} -A INPUT -i ${NALW} -p tcp -j MY_TCP_NALWv6
-
-###  drop stealth scans etc. ###
-
-#### no flags
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags ALL NONE -j DROP
-
-#### SYN and FIN flags
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
-
-#### SYN and RST flags at the same time
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
-
-#### FIN and RST flags at the same time
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
-
-#### FIN but no ACK
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
-
-#### PSH but no ACK
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
-
-#### URG but no ACK
-    #${IPT} -A MY_TCP_NALWv4 -p tcp --tcp-flags ACK,URG URG -j DROP
-
-### bla
-	${IPT} -A MY_TCP_NALWv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
-
-### SSH
-    #${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "NALW_ssh-v4-access: "
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
-    
-    #${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "NALW_ssh-v6-access: "
-    ${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
-
-### DHCPD
-	#${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "NALW_dhcpd-67-v4-tcp-access: "
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
-	#${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 68 -j LOG --log-prefix "NALW_dhcpd-68-v4-tcp-access: "
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 68 -j ACCEPT
-
-	#${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "NALW_dhcpd-547-v6-tcp-access: "
-    ${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
-
-### DNS
-    #${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "NALW_dns-v4-tcp-access: "
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
-    
-	#${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "NALW_dns-v6-tcp-access: "
-    ${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
-
-### ntp
-	${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
-	${IPT6} -A MY_TCP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
-
-### squid
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
-
-### TOR 
-	#${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 9062 -j LOG --log-prefix "NALW_tor-v4-tcp-access: "
-    ${IPT} -A MY_TCP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 9062 -j ACCEPT
-
-### IPSEC
-    #${IPT} -A MY_TCP_NALWv4 -i ${NALW} -p 50 -j ACCEPT
-    #${IPT} -A MY_TCP_NALWv4 -i ${NALW} -p 51 -j ACCEPT
-	
-### log rest
-	#${IPT} -A MY_TCP_NALWv4 -j LOG --log-prefix "forbidden from NALW v4 tcp: "
-	#${IPT6} -A MY_TCP_NALWv6 -j LOG --log-prefix "forbidden from NALW v6 tcp: "
-	
-### drop rest
-    ${IPT} -A MY_TCP_NALWv4 -j DROP
-    ${IPT6} -A MY_TCP_NALWv6 -j DROP
-
-#-------------------------------------------------------------------------------------------------------------------#
-
-### MY_UDP_NALW
-
-### create MY_UDP_NALW rules
-	${IPT} -N MY_UDP_NALWv4
-	${IPT6} -N MY_UDP_NALWv6
-
-### NALW UDP traffic goes to MY_UDP_NALW
-    ${IPT} -A INPUT -i ${NALW} -p udp -j MY_UDP_NALWv4
-    ${IPT6} -A INPUT -i ${NALW} -p udp -j MY_UDP_NALWv6
-	
-### DHCPD
-	#${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "NALW_dhcpd-67-v4-udp-access: "
-    ${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
-    #${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 68 -j LOG --log-prefix "NALW_dhcpd-68-v4-udp-access: "
-    ${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 68 -j ACCEPT
-
-    #${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "NALW_dhcpd-546-v6-udp-access: "
-    #${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT
-    #${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "NALW_dhcpd-547-v6-udp-access: "
-    ${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
-
-### DNS
-	#${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "NALW_dns-v4-udp-access: "
-    ${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
-    
-    #${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "NALW_dns-v6-udp-access: "
-    ${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
-
-### ntp
-    ${IPT} -A MY_UDP_NALWv4 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
-    ${IPT6} -A MY_UDP_NALWv6 -i ${NALW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
-
-### log rest
-	#${IPT} -A MY_UDP_NALWv4 -j LOG --log-prefix "forbidden from NALW v4 udp: "
-	#${IPT6} -A MY_UDP_NALWv6 -j LOG --log-prefix "forbidden from NALW v6 udp: "
-	
-### drop rest
-    ${IPT} -A MY_UDP_NALWv4 -j DROP
-    ${IPT6} -A MY_UDP_NALWv6 -j DROP
-    
-
-###########################################################################################################################################################################################################
 #########################  nic for kvms:  KVMS  ########################
 ########################################################################
 
@@ -1750,26 +1544,6 @@ case "$1" in
 ###########################################################################################################################################################################################################
 #########################  natting + forwarding  #######################
 ########################################################################
-
-
-### no need to translate between internal LANs
-    #${IPT} -t nat -A POSTROUTING  -s ${LANNET} -d ${WLANNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${LANNET} -d ${WLANNET} -j ACCEPT
-    
-    #${IPT} -t nat -A POSTROUTING  -s ${LANNET} -d ${KVMSNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${LANNET} -d ${KVMSNET} -j ACCEPT
-    
-    #${IPT} -t nat -A POSTROUTING  -s ${WLANNET} -d ${LANNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${WLANNET} -d ${LANNET} -j ACCEPT
-    
-    #${IPT} -t nat -A POSTROUTING  -s ${WLANNET} -d ${KVMSNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${WLANNET} -d ${KVMSNET} -j ACCEPT
-    
-    #${IPT} -t nat -A POSTROUTING  -s ${KVMSNET} -d ${LANNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${KVMSNET} -d ${LANNET} -j ACCEPT
-    
-    #${IPT} -t nat -A POSTROUTING  -s ${KVMSNET} -d ${WLANNET} -j ACCEPT
-    #${IPT} -t nat -A PREROUTING  -s ${KVMSNET} -d ${WLANNET} -j ACCEPT
     
 ############################# masquerading #############################
 	
@@ -1832,10 +1606,6 @@ case "$1" in
 	${IPT} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${WLAN} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
 
-### lan -> nalw
-	${IPT} -A FORWARD -i ${LAN} -o ${NALW} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
-	${IPT6} -A FORWARD -i ${LAN} -o ${NALW} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
-
 ### lan -> wlang
 	${IPT} -A FORWARD -i ${LAN} -o ${WLANG} -s ${LANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${LAN} -o ${WLANG} -s ${LANNET6} -m conntrack --ctstate NEW -j ACCEPT
@@ -1870,10 +1640,6 @@ case "$1" in
 ### wlan -> hipv6
 	#${IPT} -A FORWARD -i ${WLAN} -o ${HE6} -s ${WLANNET} -m conntrack --ctstate NEW -j ACCEPT
 	${IPT6} -A FORWARD -i ${WLAN} -o ${HE6} -s ${WLANNET6} -m conntrack --ctstate NEW -j ACCEPT
-
-##### NALW #####
-### nalw -> world
-	${IPT} -A FORWARD -i ${NALW} -o ${WORLD} -s ${NALWNET} -m conntrack --ctstate NEW -j ACCEPT
 
 ##### WLANG #####
 ### wlang -> world
@@ -2006,25 +1772,6 @@ case "$1" in
     
     ${IPT6} -F MY_UDP_WLANv6
     ${IPT6} -X MY_UDP_WLANv6
-
-### NALW
-    ${IPT} -F MY_ICMP_NALWv4
-	${IPT} -X MY_ICMP_NALWv4
-	
-    ${IPT6} -F MY_ICMP_NALWv6
-    ${IPT6} -X MY_ICMP_NALWv6
-    
-    ${IPT} -F MY_TCP_NALWv4
-    ${IPT} -X MY_TCP_NALWv4
-    
-    ${IPT6} -F MY_TCP_NALWv6
-    ${IPT6} -X MY_TCP_NALWv6
-    
-    ${IPT} -F MY_UDP_NALWv4
-    ${IPT} -X MY_UDP_NALWv4
-    
-    ${IPT6} -F MY_UDP_NALWv6
-    ${IPT6} -X MY_UDP_NALWv6
 
 ### WLANG
     ${IPT} -F MY_ICMP_WLANGv4
