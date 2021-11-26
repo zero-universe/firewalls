@@ -1,0 +1,146 @@
+flush ruleset
+table ip mangle {
+	chain PREROUTING {
+		type filter hook prerouting priority 0; policy accept;
+	}
+
+	chain INPUT {
+		type filter hook input priority 0; policy accept;
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy accept;
+	}
+
+	chain OUTPUT {
+		type route hook output priority 0; policy accept;
+	}
+
+	chain POSTROUTING {
+		type filter hook postrouting priority 0; policy accept;
+	}
+}
+table ip nat {
+	chain PREROUTING {
+		type nat hook prerouting priority 0; policy accept;
+	}
+
+	chain INPUT {
+		type nat hook input priority 0; policy accept;
+	}
+
+	chain OUTPUT {
+		type nat hook output priority 0; policy accept;
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority 0; policy accept;
+	}
+}
+table ip filter {
+	chain INPUT {
+		type filter hook input priority 0; policy accept;
+		iifname "lo" counter packets 72 bytes 8358 jump MY_LOOPYv4
+		ct state established,related counter packets 147097 bytes 54940706 accept
+		ct state invalid counter packets 14144 bytes 594730 drop
+		iifname "ens3" ip protocol icmp counter packets 1265 bytes 45520 jump MY_ICMP_WORLDv4
+		iifname "ens3" ip protocol tcp counter packets 47611 bytes 2275304 jump MY_TCP_WORLDv4
+		iifname "ens3" ip protocol udp counter packets 1923 bytes 647872 jump MY_UDP_WORLDv4
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy drop;
+	}
+
+	chain OUTPUT {
+		type filter hook output priority 0; policy accept;
+	}
+
+	chain MY_ICMP_WORLDv4 {
+		icmp type destination-unreachable ct state related counter packets 0 bytes 0 accept
+		icmp type parameter-problem ct state related counter packets 0 bytes 0 accept
+		icmp type echo-request limit rate 10/second counter packets 1265 bytes 45520 accept
+		icmp type echo-request ct state established,related,new counter packets 0 bytes 0 accept
+		icmp type echo-reply ct state established,related counter packets 0 bytes 0 accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_LOOPYv4 {
+		iifname "lo" counter packets 72 bytes 8358 accept
+	}
+
+	chain MY_TCP_WORLDv4 {
+		tcp flags & (fin | syn | rst | psh | ack | urg) == fin | psh | urg counter packets 0 bytes 0 drop
+		iifname "ens3" ct state new tcp dport https counter packets 1623 bytes 90300 accept
+		iifname "ens3" ct state new tcp dport 23235 counter packets 13 bytes 780 accept
+	}
+
+	chain MY_UDP_WORLDv4 {
+	}
+}
+table ip6 mangle {
+	chain PREROUTING {
+		type filter hook prerouting priority 0; policy accept;
+	}
+
+	chain INPUT {
+		type filter hook input priority 0; policy accept;
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy accept;
+	}
+
+	chain OUTPUT {
+		type route hook output priority 0; policy accept;
+	}
+
+	chain POSTROUTING {
+		type filter hook postrouting priority 0; policy accept;
+	}
+}
+table ip6 filter {
+	chain INPUT {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" counter packets 0 bytes 0 jump MY_LOOPYv6
+		ct state established,related counter packets 15039 bytes 227082916 accept
+		ct state invalid counter packets 0 bytes 0 drop
+		iifname "ens3" meta l4proto ipv6-icmp counter packets 101498 bytes 7168688 jump MY_ICMP_WORLDv6
+		iifname "ens3" meta l4proto tcp counter packets 162 bytes 11260 jump MY_TCP_WORLDv6
+		iifname "ens3" meta l4proto udp counter packets 30 bytes 22170 jump MY_UDP_WORLDv6
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy drop;
+	}
+
+	chain OUTPUT {
+		type filter hook output priority 0; policy accept;
+	}
+
+	chain MY_ICMP_WORLDv6 {
+		icmpv6 type destination-unreachable ct state related counter packets 0 bytes 0 accept
+		icmpv6 type packet-too-big ct state related counter packets 0 bytes 0 accept
+		icmpv6 type time-exceeded ct state related counter packets 0 bytes 0 accept
+		icmpv6 type parameter-problem ct state related counter packets 0 bytes 0 accept
+		icmpv6 type echo-request limit rate 10/second counter packets 15 bytes 840 accept
+		icmpv6 type echo-reply counter packets 0 bytes 0 accept
+		iifname "ens3" icmpv6 type nd-router-solicit counter packets 0 bytes 0 accept
+		iifname "ens3" icmpv6 type nd-router-advert counter packets 15278 bytes 977792 accept
+		iifname "ens3" icmpv6 type nd-neighbor-solicit counter packets 84115 bytes 6056232 accept
+		iifname "ens3" icmpv6 type nd-neighbor-advert counter packets 2084 bytes 133392 accept
+		counter packets 6 bytes 432 drop
+	}
+
+	chain MY_LOOPYv6 {
+		iifname "lo" counter packets 0 bytes 0 accept
+	}
+
+	chain MY_TCP_WORLDv6 {
+		iifname "ens3" ct state new tcp dport https counter packets 41 bytes 3220 accept
+		iifname "ens3" ct state new tcp dport 23235 counter packets 2 bytes 160 accept
+	}
+
+	chain MY_UDP_WORLDv6 {
+	}
+}

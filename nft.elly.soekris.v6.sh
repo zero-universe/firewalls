@@ -1,17 +1,33 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2016.04.23
+# last modified 2017.06.04
 # zero.universe@gmail.com
 #
 
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
+
+
+define world = enp5s0
+define media = enp6s0
+#define buero = enp10s0
+define gwlan = enp11s0
+define wlan = wlp13s0
+#define int_ifs = { $int_if1, $int_if2 }
+#filter input iifname $int_ifs accept
+
 # nics:
 #
-# eth0 = world
-# eth1 = lan
-# eth2 = gwlan
-# eth3 = kvms
+# enp5s0 = internet
+# enp6s0 = lan
+# enp10s0 = buero
+# enp11s0 = kvms
+# wlp13s0 = wlan
 # tun1 = ziont
+# hipv6 =  TUNB6
 
 table ip6 filter {
 	
@@ -22,35 +38,39 @@ table ip6 filter {
 		ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		iifname lo accept
 		
 		# established/related connections
 		ct state {established, related} accept
 
 		# incoming inet trafic
-		iif eth0 ip protocol tcp goto my_world_tcpv6
-		iif eth0 ip protocol udp goto my_world_udpv6
-		iif eth0 ip protocol icmp goto my_world_icmpv6
+		iifname $world ip protocol tcp goto my_world_tcpv6
+		iifname $world ip protocol udp goto my_world_udpv6
+		iifname $world ip protocol icmpv6 goto my_world_icmpv6
+		           
+		iifname $lan ip protocol tcp goto my_lan_tcpv6
+		iifname $lan ip protocol udp goto my_lan_udpv6
+		iifname $lan ip protocol icmpv6 goto my_lan_icmpv6
+		           
+		iifname $buero ip protocol tcp goto my_gwlan_tcpv6
+		iifname $buero ip protocol udp goto my_gwlan_udpv6
+		iifname $buero ip protocol icmpv6 goto my_gwlan_icmpv6
 		
-		iif eth1 ip protocol tcp goto my_lan_tcpv6
-		iif eth1 ip protocol udp goto my_lan_udpv6
-		iif eth1 ip protocol icmp goto my_lan_icmpv6
+		iifname $kvms ip protocol tcp goto my_kvms_tcpv6
+		iifname $kvms ip protocol udp goto my_kvms_udpv6
+		iifname $kvms ip protocol icmpv6 goto my_kvms_icmpv6
 		
-		iif eth2 ip protocol tcp goto my_gwlan_tcpv6
-		iif eth2 ip protocol udp goto my_gwlan_udpv6
-		iif eth2 ip protocol icmp goto my_gwlan_icmpv6
+		iifname $wlan ip protocol tcp goto my_wlan_tcpv6
+		iifname $wlan ip protocol udp goto my_wlan_udpv6
+		iifname $wlan ip protocol icmpv6 goto my_wlan_icmpv6
 		
-		iif eth3 ip protocol tcp goto my_kvms_tcpv6
-		iif eth3 ip protocol udp goto my_kvms_udpv6
-		iif eth3 ip protocol icmp goto my_kvms_icmpv6
+		iifname tun1 ip protocol tcp goto my_ziont_tcpv6
+		iifname tun1 ip protocol udp goto my_ziont_udpv6
+		iifname tun1 ip protocol icmpv6 goto my_ziont_icmpv6
 		
-		iif wlan0 ip protocol tcp goto my_wlan_tcpv6
-		iif wlan0 ip protocol udp goto my_wlan_udpv6
-		iif wlan0 ip protocol icmp goto my_wlan_icmpv6
-		
-		iif tun1 ip protocol tcp goto my_ziont_tcpv6
-		iif tun1 ip protocol udp goto my_ziont_udpv6
-		iif tun1 ip protocol icmp goto my_ziont_icmpv6
+		iifname hipv6 ip protocol tcp goto my_hipv6_tcpv6
+		iifname hipv6 ip protocol udp goto my_hipv6_udpv6
+		iifname hipv6 ip protocol icmpv6 goto my_hipv6_icmpv6
 
 		}
 		
@@ -58,22 +78,22 @@ table ip6 filter {
 	chain my_world_tcpv6 {
 		
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# bad tcp -> avoid network scanning:
-		tcp flags & (fin|syn) == (fin|syn) drop
-		tcp flags & (syn|rst) == (syn|rst) drop
+		#tcp flags & (fin|syn) == (fin|syn) drop
+		#tcp flags & (syn|rst) == (syn|rst) drop
 		tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
-		tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		#tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: sec
-		iif eth0 tcp dport { 23235 } accept
+		iifname $world tcp dport { 23235 } accept
 
         }
 	
@@ -81,13 +101,13 @@ table ip6 filter {
 	chain my_world_udpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
         }
          
@@ -95,16 +115,16 @@ table ip6 filter {
 	chain my_world_icmpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 
-		iif eth0 icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
-		iif eth0 limit rate 10/second counter accept
+		iifname $world icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
+		iifname $world limit rate 10/second counter accept
     
         }
 
@@ -112,22 +132,22 @@ table ip6 filter {
 	chain my_lan_tcpv6 {
 	
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# bad tcp -> avoid network scanning:
-		tcp flags & (fin|syn) == (fin|syn) drop
-		tcp flags & (syn|rst) == (syn|rst) drop
+		#tcp flags & (fin|syn) == (fin|syn) drop
+		#tcp flags & (syn|rst) == (syn|rst) drop
 		tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
-		tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		#tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: dns,dhcp,ntp,squid,tor,sec
-		iif eth1 tcp dport { 53,67,68,123,3128,9060,23235 } accept
+		iifname $lan tcp dport { 53,67,68,123,3128,9060,23235 } accept
 
         }
 	
@@ -135,16 +155,16 @@ table ip6 filter {
 	chain my_lan_udpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# open tcp ports: dns,dhcp,ntp
-		iif eth1 tcp dport { 53,67,68,123 } accept
+		iifname $lan tcp dport { 53,67,68,123 } accept
 		
         }
          
@@ -152,16 +172,16 @@ table ip6 filter {
 	chain my_lan_icmpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
-		iif eth1 icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
-		iif eth1 limit rate 10/second counter accept
+		iifname $lan icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
+		iifname $lan limit rate 10/second counter accept
     
         }
 
@@ -169,22 +189,22 @@ table ip6 filter {
 	chain my_gwlan_tcpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 				
 		# bad tcp -> avoid network scanning:
-        tcp flags & (fin|syn) == (fin|syn) drop
-        tcp flags & (syn|rst) == (syn|rst) drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		#tcp flags & (fin|syn) == (fin|syn) drop
+		#tcp flags & (syn|rst) == (syn|rst) drop
+		tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
+		#tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: dns,dhcp,ntp,squid
-		iif eth2 tcp dport { 53,67,68,123,3128 } accept
+		iifname $buero tcp dport { 53,67,68,123,3128 } accept
 
         }
 	
@@ -192,16 +212,16 @@ table ip6 filter {
 	chain my_gwlan_udpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# open tcp ports: dns,dhcp,ntp
-		iif eth2 tcp dport { 53,67,68,123 } accept
+		iifname $buero tcp dport { 53,67,68,123 } accept
 		
         }
          
@@ -209,16 +229,16 @@ table ip6 filter {
 	chain my_gwlan_icmpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
-		iif eth2 icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
-		iif eth2 limit rate 3/second counter accept
+		iifname $buero icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
+		iifname $buero limit rate 3/second counter accept
     
         }
         
@@ -226,22 +246,22 @@ table ip6 filter {
 	chain my_kvms_tcpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 				
 		# bad tcp -> avoid network scanning:
-        tcp flags & (fin|syn) == (fin|syn) drop
-        tcp flags & (syn|rst) == (syn|rst) drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		#tcp flags & (fin|syn) == (fin|syn) drop
+		#tcp flags & (syn|rst) == (syn|rst) drop
+		tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
+		#tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: dns,dhcp,ntp,squid
-		iif eth3 tcp dport { 53,67,68,123,3128 } accept
+		iifname $kvms tcp dport { 53,67,68,123,3128 } accept
 
         }
 	
@@ -249,24 +269,24 @@ table ip6 filter {
 	chain my_kvms_udpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# open tcp ports: dns,dhcp,ntp
-		iif eth3 tcp dport { 53,67,68,123 } accept
+		iifname $kvms tcp dport { 53,67,68,123 } accept
 		
         }
          
             
 	chain my_kvms_icmpv6 {
 
-		iif eth3 icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
-		iif eth3 limit rate 3/second counter accept
+		iifname $kvms icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
+		iifname $kvms limit rate 3/second counter accept
     
         }
         
@@ -274,22 +294,22 @@ table ip6 filter {
 	chain my_wlan_tcpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 				
 		# bad tcp -> avoid network scanning:
-        tcp flags & (fin|syn) == (fin|syn) drop
-        tcp flags & (syn|rst) == (syn|rst) drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
-        tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+		#tcp flags & (fin|syn) == (fin|syn) drop
+		#tcp flags & (syn|rst) == (syn|rst) drop
+		tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
+		#tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: dns,dhcp,ntp,squid,tor,sec
-		iif wlan0 tcp dport { 53,67,68,123,3128,9061,23235 } accept
+		iifname $wlan tcp dport { 53,67,68,123,3128,9061,23235 } accept
 
         }
 	
@@ -297,16 +317,16 @@ table ip6 filter {
 	chain my_wlan_udpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
 		# open tcp ports: dns,dhcp,ntp
-		iif wlan0 tcp dport { 53,67,68,123 } accept
+		iifname $wlan tcp dport { 53,67,68,123 } accept
 		
         }
          
@@ -314,16 +334,16 @@ table ip6 filter {
 	chain my_wlan_icmpv6 {
 
 		# invalid connections
-		ct state invalid drop
+		#ct state invalid drop
 
 		# loopback interface
-		iif lo accept
+		#iifname lo accept
 		
 		# established/related connections
-		ct state {established, related} accept
+		#ct state {established, related} accept
 		
-		iif wlan0 icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
-		iif wlan0 limit rate 3/second counter accept
+		iifname $wlan icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } counter accept
+		iifname $wlan limit rate 3/second counter accept
     
         }
 	
@@ -340,19 +360,19 @@ table ip6 filter {
 		# invalid connections
 		ct state invalid drop
 
-		ct state {established, related} accept
+		#ct state {established, related} accept
 
-		iif eth1 oif eth2 accept
-		iif eth1 oif eth3 accept
-		iif eth1 oif wlan0 accept
-		iif eth1 oif tun1 accept
+		iifname $lan oifname $buero accept
+		iifname $lan oifname $kvms accept
+		iifname $lan oifname $wlan accept
+		iifname $lan oifname tun1 accept
 		
-		iif wlan0 oif eth1 accept
-		iif wlan0 oif eth3 accept
-		iif wlan0 oif tun1 accept
+		iifname $wlan oifname $lan accept
+		iifname $wlan oifname $kvms accept
+		iifname $wlan oifname tun1 accept
 		
-		iif tun1 oif eth1 accept
-		iif tun1 oif wlan0 accept
+		iifname tun1 oifname $lan accept
+		iifname tun1 oifname $wlan accept
 		
 		}
 		
@@ -370,7 +390,8 @@ table ip6 nat {
 	chain postrouting {
 		type nat hook postrouting priority -150; policy accept;
 		
-		oif eth0 masquerade
+		oifname $world masquerade
+		oifname hipv6 masquerade
 
 		}
 

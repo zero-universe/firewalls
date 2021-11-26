@@ -1,0 +1,1255 @@
+#!/bin/bash
+
+#
+# last modified 2018.07.22
+# zero.universe@gmail.com
+#
+
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
+
+############################ definitions ###############################
+
+# WORLD 	=	Internet nic
+# MEDIALAN	=	Media LAN nic (bridge with LAN and WIFI)
+# OVPN		=	OpenVPN tunnel
+
+IPT=$(which iptables)
+IPT6=$(which ip6tables)
+EBT=$(which ebtables)
+IPS=$(which ipset)
+WORLD="enp5s0"
+MEDIALAN="br0"
+#WLAN="wlp13s0"
+GUESTW="enp11s0"
+#OVPN="tun0"
+#OVPNT="tun1"
+HE6="hipv6"
+
+MOD=$(which modprobe)
+
+MEDIALANNET="192.168.77.0/24"
+MEDIALANNET6="fd54:fc9a:8b7a:765e::/64"
+
+GUESTWNET="192.168.99.0/24"
+GUESTWNET6="fd56:fc9a:8b7a:765e::/64"
+
+#OVPNNET="192.168.111.0/24"
+
+#OVPNTNET="192.168.112.0/24"
+#OVPNT6NET="fd51:fc9a:8b7a:765e::0/64"
+
+TFFM="216.66.80.30"
+
+HE6NET="2001:470:1f0a:3c::/64"
+
+BADHOSTSLIST="blackhole"
+INTBAD="intbad"
+INTGOOD="intgood"
+INTWHITE="intwhite"
+KAKTUS="kaktus"
+
+case "$1" in
+  start)
+
+  echo "starting firewall"
+
+############################ load modules ##############################
+
+### iptables-Modul
+    ${MOD} x_tables
+    ${MOD} ip_tables
+    ${MOD} ip6table_filter
+    ${MOD} ip6_tables
+#    ${MOD} nf_nat_ftp
+
+### Connection-Tracking-Module
+    ${MOD} nf_conntrack nf_conntrack_helper=0
+#    ${MOD} nf_conntrack_ipv6
+#    ${MOD} nf_conntrack_irc
+#    ${MOD} nf_conntrack_ftp
+
+############################ proc-settings #############################
+
+### activate forwarding
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+    echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+
+### Max. 500/second (5/Jiffie)
+    echo 10 > /proc/sys/net/ipv4/icmp_ratelimit
+    echo 10 > /proc/sys/net/ipv6/icmp/ratelimit
+
+### ram and ram-timing for IP-de/-fragmentation
+    #echo 262144 > /proc/sys/net/ipv4/ipfrag_high_thresh
+    echo 196608 > /proc/sys/net/ipv4/ipfrag_low_thresh
+    echo 30 > /proc/sys/net/ipv4/ipfrag_time
+    
+    #echo 262144 > /proc/sys/net/ipv6/ip6frag_high_thresh
+    echo 196608 > /proc/sys/net/ipv6/ip6frag_low_thresh
+    echo 30 > /proc/sys/net/ipv6/ip6frag_time
+
+### TCP-FIN-Timeout protection against DoS-attacks
+    echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
+
+### max 3 answers to a TCP-SYN
+    echo 3 > /proc/sys/net/ipv4/tcp_retries1
+
+### repeat TCP-packets max 15x
+    echo 15 > /proc/sys/net/ipv4/tcp_retries2
+    
+### disable source routing
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+	
+### ignore bogus icmp_errors
+	echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+	
+### deactivate source redirects
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_redirects
+	
+### deactivate source route
+	echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
+
+### no helper
+	echo 0 > /proc/sys/net/netfilter/nf_conntrack_helper
+
+############################ cleanup tables ############################
+
+    ${IPT} -F
+    ${IPT} -t nat -F
+    ${IPT} -t mangle -F
+    ${IPT} -t nat -X
+    ${IPT} -t mangle -X
+	${IPT} -X
+
+    ${IPT6} -F
+    ${IPT6} -t mangle -F
+	${IPT6} -t mangle -F
+    ${IPT6} -t nat -X
+    ${IPT6} -t mangle -X
+    ${IPT6} -X
+
+### ipset
+	#${IPS} flush ${BADHOSTSLIST}
+	#${IPS} create ${BADHOSTSLIST} hash:ip maxelem 200000 hashsize 4096
+	${IPS} restore < /root/${BADHOSTSLIST}.bak
+	
+	#${IPS} flush ${INTBAD}
+	#${IPS} create ${INTBAD} hash:mac hashsize 2048
+	##${IPS} restore < /root/${INTBAD}.bak
+
+	#${IPS} flush ${INTGOOD}
+	#${IPS} create ${INTGOOD} hash:mac hashsize 2048
+	##${IPS} restore < /root/${INTGOOD}.bak
+
+	#${IPS} flush ${INTWHITE}
+	#${IPS} create ${INTWHITE} hash:ip maxelem 2000 hashsize 4096
+	##${IPS} restore < /root/${INTWHITE}.bak
+
+	#${IPS} flush ${KAKTUS}
+	#${IPS} create ${KAKTUS} hash:ip maxelem 65536 hashsize 1024
+	##${IPS} restore < /root/${KAKTUS}.bak
+
+########################### default policies ###########################
+
+    ${IPT} -P INPUT DROP
+    ${IPT} -P OUTPUT ACCEPT
+    ${IPT} -P FORWARD DROP
+
+    ${IPT6} -P INPUT DROP
+    ${IPT6} -P OUTPUT ACCEPT
+    ${IPT6} -P FORWARD DROP
+    
+    
+    #${EBT} -P INPUT DROP
+    #${EBT} -P OUTPUT ACCEPT
+    #${EBT} -P FORWARD DROP
+
+###################### allow loopback networking #######################
+
+
+### MY_LOOPY Chain
+    ${IPT} -N MY_LOOPYv4
+    ${IPT6} -N MY_LOOPYv6
+
+### loopback traffic goes to MY_LOOPY
+    ${IPT} -A INPUT -i lo -j MY_LOOPYv4
+    ${IPT6} -A INPUT -i lo -j MY_LOOPYv6
+    
+    ${IPT} -A MY_LOOPYv4 -i lo -j ACCEPT
+    ${IPT6} -A MY_LOOPYv6 -i lo -j ACCEPT
+    
+#----------------------------------------------------------------------#
+    	
+########################## creation of tables ##########################
+
+###########################################################################################################################################################################################################
+############################  INPUT  ###################################
+########################################################################
+
+### connection tracking for INPUT
+    ${IPT} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	${IPT6} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+    #${IPT} -A INPUT -m conntrack --ctstate INVALID -j DROP
+    #${IPT6} -A INPUT -m conntrack --ctstate INVALID -j DROP
+    #${EBT} -A INPUT -m conntrack --ctstate INVALID -j DROP
+	
+###########################################################################################################################################################################################################
+######################  nic for Internet:  WORLD  ######################
+########################################################################
+
+### MY_ICMP_WORLD
+
+### create MY_ICMP_WORLD rules
+	${IPT} -N MY_ICMP_WORLDv4
+	${IPT6} -N MY_ICMP_WORLDv6
+
+### WORLD icmp traffic goes to MY_ICMP_WORLD
+    ${IPT} -A INPUT -i ${WORLD} -p icmp -j MY_ICMP_WORLDv4
+    ${IPT6} -A INPUT -i ${WORLD} -p icmpv6 -j MY_ICMP_WORLDv6
+
+### drop badhosts
+	${IPT} -A MY_ICMP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p icmp -j DROP
+        
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+#    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "world_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate NEW -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW -j ACCEPT
+#    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "world_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_WORLDv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_ICMP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_WORLDv4 -j DROP
+    
+### MY_ICMP_WORLDv6
+		
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_WORLDv6 -i ${WORLD} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -i ${WORLD} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_WORLDv6 -i ${WORLD} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -i ${WORLD} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    #${IPT6} -A MY_ICMP_WORLDv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_WORLDv6 -j DROP
+
+#----------------------------------------------------------------------#
+
+### MY_TCP_WORLD
+
+### create MY_TCP_WORLD rules
+	${IPT} -N MY_TCP_WORLDv4
+	${IPT6} -N MY_TCP_WORLDv6
+
+### WORLD tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${WORLD} -p tcp -j MY_TCP_WORLDv4
+    ${IPT6} -A INPUT -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
+
+### drop badhosts
+	${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p tcp -j DROP
+	
+### drop stealth scans etc. ###
+
+## no flags
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags ALL NONE -j DROP
+
+## SYN and FIN flags
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+## SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+## FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+## FIN but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags ACK,FIN FIN -j DROP
+
+## PSH but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags ACK,PSH PSH -j DROP
+
+## URG but no ACK
+    #${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_WORLDv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
+
+### SSH
+	#${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v4-access: "
+    ${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 22 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "world_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+### openvpn    
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j LOG --log-prefix "world_openvpn-v4-tcp-access: "
+    #${IPT} -A MY_TCP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j ACCEPT
+
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j LOG --log-prefix "world_openvpn-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p tcp --dport 1195 -j ACCEPT
+    
+### log rest
+#	${IPT} -A MY_TCP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 tcp: "
+#	${IPT6} -A MY_TCP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 tcp: "
+	
+### drop rest
+	${IPT} -A MY_TCP_WORLDv4 -j DROP    
+    ${IPT6} -A MY_TCP_WORLDv6 -j DROP    
+    
+#----------------------------------------------------------------------#
+    
+### MY_UDP_WORLD
+
+### create MY_UDP_WORLD rules
+	${IPT} -N MY_UDP_WORLDv4
+	${IPT6} -N MY_UDP_WORLDv6
+
+### WORLD tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${WORLD} -p udp -j MY_UDP_WORLDv4
+    ${IPT6} -A INPUT -i ${WORLD} -p udp -j MY_UDP_WORLDv6
+
+### drop badhosts
+	${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m set --match-set ${BADHOSTSLIST} src -p udp -j DROP
+
+### OPENVPN_V2
+    #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v4-udp-access: "
+    #${IPT} -A MY_UDP_WORLDv4 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "world_openvpn-v6-udp-access: "
+    #${IPT6} -A MY_UDP_WORLDv6 -i ${WORLD} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_UDP_WORLDv4 -j LOG --log-prefix "forbidden from world v4 udp: "
+	#${IPT6} -A MY_UDP_WORLDv6 -j LOG --log-prefix "forbidden from world v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_WORLDv4 -j DROP
+    ${IPT6} -A MY_UDP_WORLDv6 -j DROP
+    
+###########################################################################################################################################################################################################
+#######################  nic for intranet:  MEDIALAN  #######################
+########################################################################
+
+### MY_ICMP_MEDIALAN
+
+### create MY_ICMP_MEDIALAN rules
+	${IPT} -N MY_ICMP_MEDIALANv4
+	${IPT6} -N MY_ICMP_MEDIALANv6
+
+### MEDIALAN icmp traffic goes to MY_ICMP_MEDIALAN
+    ${IPT} -A INPUT -i ${MEDIALAN} -p icmp -j MY_ICMP_MEDIALANv4
+    ${IPT6} -A INPUT -i ${MEDIALAN} -p icmpv6 -j MY_ICMP_MEDIALANv6
+#    ${IPT6} -A INPUT -i ${MEDIALAN} -p icmpv6 -j ACCEPT
+	    
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+#    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "MEDIALAN_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+#    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "MEDIALAN_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_MEDIALANv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
+### log rest 
+	#${IPT} -A MY_ICMP_MEDIALANv4 -j LOG --log-prefix "forbidden from lan v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_MEDIALANv4 -j DROP
+
+### drop badhosts
+#	${IPT} -A MY_ICMP_MEDIALANv4 -i ${MEDIALAN} -m set --match-set ${INTBAD} src -p icmp -j DROP
+#	${IPT} -A MY_ICMP_MEDIALANv6 -i ${MEDIALAN} -m set --match-set ${INTBAD} src -p icmpv6 -j DROP
+
+### MY_ICMP_MEDIALANv6
+	
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -i ${MEDIALAN} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -i ${MEDIALAN} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -i ${MEDIALAN} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -i ${MEDIALAN} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+#    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_MEDIALANv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_MEDIALANv6 -j LOG --log-prefix "forbidden from lan v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_MEDIALANv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### MY_TCP_MEDIALAN
+
+### create MY_TCP_MEDIALAN rules
+	${IPT} -N MY_TCP_MEDIALANv4
+	${IPT6} -N MY_TCP_MEDIALANv6
+
+### MEDIALAN tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${MEDIALAN} -p tcp -j MY_TCP_MEDIALANv4
+    ${IPT6} -A INPUT -i ${MEDIALAN} -p tcp -j MY_TCP_MEDIALANv6
+
+### drop badhosts
+#	${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m set --match-set ${INTBAD} src -p tcp -j DROP
+
+###  drop stealth scans etc. ###
+
+### no flags
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+### SYN and FIN flags
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+### FIN but no ACK
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+### PSH but no ACK
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+### URG but no ACK
+    #${IPT} -A MY_TCP_MEDIALANv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_MEDIALANv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
+
+### DHCPD
+	#${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "lan_dhcpd-67-v4-tcp-access: "
+    ${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-tcp-547-access: "
+    ${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
+
+### DNS
+    #${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v4-tcp-access: "
+    ${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "lan_dns-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+
+### NTP
+	#${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "lan_ntp-v4-tcp-access: "
+    #${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "lan_ntp-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+
+### squid
+	${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
+	${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
+
+### TOR 
+	#${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "lan_tor-v4-tcp-access: "
+    #${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "lan_tor-v4-tcp-access: "
+    #${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
+    
+### IPSEC
+    #${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -p 50 -j ACCEPT
+    #${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -p 51 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_TCP_MEDIALANv4 -j LOG --log-prefix "forbidden from lan v4 tcp: "
+	#${IPT6} -A MY_TCP_MEDIALANv6 -j LOG --log-prefix "forbidden from lan v6 tcp: "
+
+### ssh
+	#${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "medialan_ssh-v4-tcp-access: "
+    ${IPT} -A MY_TCP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+    #${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "medialan_ssh-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+### drop rest
+    ${IPT} -A MY_TCP_MEDIALANv4 -j DROP
+    ${IPT6} -A MY_TCP_MEDIALANv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### MY_UDP_MEDIALAN
+
+### create MY_UDP_MEDIALAN rules
+	${IPT} -N MY_UDP_MEDIALANv4
+	${IPT6} -N MY_UDP_MEDIALANv6
+
+### MEDIALAN UDP traffic goes to MY_UDP_MEDIALAN
+    ${IPT} -A INPUT -i ${MEDIALAN} -p udp -j MY_UDP_MEDIALANv4
+    ${IPT6} -A INPUT -i ${MEDIALAN} -p udp -j MY_UDP_MEDIALANv6
+
+### drop badhosts
+#	${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m set --match-set ${INTBAD} src -p udp -j DROP
+
+### DHCPD
+	#${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "lan_dhcpd-v4-67-udp-access: "
+    ${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
+
+### pxe	
+    #${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 69 -j ACCEPT
+
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "lan_dhcpd-v6-udp-547-access: "
+    ${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
+
+### DNS
+	#${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v4-udp-access: "
+    ${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "lan_dns-v6-udp-access: "
+    ${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
+
+### NTP
+	#${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "lan_ntp-v4-udp-access: "
+    #${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "lan_ntp-v6-udp-access: "
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+    
+ ### allow kaktus
+	#${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m set --match-set ${KAKTUS} src -p udp --dport 161 -j ACCEPT
+
+### IPSEC
+	#${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 500 -j ACCEPT
+
+### OPENVPN_V2
+    #${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v4-udp-access: "
+    #${IPT} -A MY_UDP_MEDIALANv4 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "lan_openvpn-v6-udp-access: "
+    #${IPT6} -A MY_UDP_MEDIALANv6 -i ${MEDIALAN} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+	
+### log rest
+	#${IPT} -A MY_UDP_MEDIALANv4 -j LOG --log-prefix "forbidden from lan v4 udp: "
+	#${IPT6} -A MY_UDP_MEDIALANv6 -j LOG --log-prefix "forbidden from lan v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_MEDIALANv4 -j DROP
+    ${IPT6} -A MY_UDP_MEDIALANv6 -j DROP
+    
+
+###########################################################################################################################################################################################################
+#######################  nic for guests:  GUESTW  ######################
+########################################################################
+
+### MY_ICMP_GUESTW
+
+### create MY_ICMP_GUESTW rules
+	${IPT} -N MY_ICMP_GUESTWv4
+	${IPT6} -N MY_ICMP_GUESTWv6
+
+### GUESTW icmp traffic goes to MY_ICMP_GUESTW
+    ${IPT} -A INPUT -i ${GUESTW} -p icmp -j MY_ICMP_GUESTWv4
+    ${IPT6} -A INPUT -i ${GUESTW} -p icmpv6 -j MY_ICMP_GUESTWv6
+    #${IPT6} -A INPUT -i ${GUESTW} -p icmpv6 -j ACCEPT
+	    
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "GUESTW_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+    #${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "GUESTW_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_GUESTWv4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
+### log rest 
+	#${IPT} -A MY_ICMP_GUESTWv4 -j LOG --log-prefix "forbidden from kvms v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_GUESTWv4 -j DROP
+    
+### MY_ICMP_GUESTWv6
+	
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_GUESTWv6 -i ${GUESTW} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -i ${GUESTW} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_GUESTWv6 -i ${GUESTW} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -i ${GUESTW} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+#    ${IPT6} -A MY_ICMP_GUESTWv6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_GUESTWv6 -j LOG --log-prefix "forbidden from kvms v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_GUESTWv6 -j DROP
+    
+#----------------------------------------------------------------------#
+    
+### MY_TCP_GUESTW
+
+### create MY_TCP_GUESTW rules
+	${IPT} -N MY_TCP_GUESTWv4
+	${IPT6} -N MY_TCP_GUESTWv6
+
+### GUESTW tcp traffic goes to MY_TCP_WORLD
+    ${IPT} -A INPUT -i ${GUESTW} -p tcp -j MY_TCP_GUESTWv4
+    ${IPT6} -A INPUT -i ${GUESTW} -p tcp -j MY_TCP_GUESTWv6
+	
+###  drop stealth scans etc. ###
+
+#### no flags
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags ALL NONE -j DROP
+
+#### SYN and FIN flags
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+#### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+#### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+#### FIN but no ACK
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+#### PSH but no ACK
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+#### URG but no ACK
+    #${IPT} -A MY_TCP_GUESTWv4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_GUESTWv4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
+
+### SSH
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "kvms_ssh-v4-access: "
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "kvms_ssh-v6-access: "
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+### DHCPD
+	#${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 67 -j LOG --log-prefix "kvms_dhcpd-67-v4-tcp-access: "
+    ${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 67 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "kvms_dhcpd-v6-tcp-547-access: "
+    ${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
+
+### DNS
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "kvms_dns-v4-tcp-access: "
+    ${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "kvms_dns-v6-tcp-access: "
+    ${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+
+### NTP
+	#${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "kvms_ntp-v4-tcp-access: "
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 123 -j LOG --log-prefix "kvms_ntp-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 123 -j ACCEPT
+
+### squid
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 3128 -j ACCEPT
+    
+### TOR 
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 9062 -j LOG --log-prefix "kvms_tor-v4-tcp-access: "
+    #${IPT} -A MY_TCP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 9062 -j ACCEPT
+    
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 9060 -j LOG --log-prefix "kvms_tor-v4-tcp-access: "
+    #${IPT6} -A MY_TCP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p tcp --dport 9060 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_TCP_GUESTWv4 -j LOG --log-prefix "forbidden from kvms v4 tcp: "
+	#${IPT6} -A MY_TCP_GUESTWv6 -j LOG --log-prefix "forbidden from kvms v6 tcp: "
+	
+### drop rest
+    ${IPT} -A MY_TCP_GUESTWv4 -j DROP
+    ${IPT6} -A MY_TCP_GUESTWv6 -j DROP
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+### MY_UDP_GUESTW
+
+### create MY_UDP_GUESTW rules
+	${IPT} -N MY_UDP_GUESTWv4
+	${IPT6} -N MY_UDP_GUESTWv6
+
+### GUESTW UDP traffic goes to MY_UDP_GUESTW
+    ${IPT} -A INPUT -i ${GUESTW} -p udp -j MY_UDP_GUESTWv4
+    ${IPT6} -A INPUT -i ${GUESTW} -p udp -j MY_UDP_GUESTWv6
+
+### DHCPD
+	#${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 67 -j LOG --log-prefix "kvms_dhcpd-v4-67-udp-access: "
+    ${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 67 -j ACCEPT
+### pxe
+    #${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 69 -j ACCEPT
+
+	#${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 546 -j LOG --log-prefix "kvms_dhcpd-v6-udp-547-access: "
+    #${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 546 -j ACCEPT        
+    #${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 547 -j LOG --log-prefix "kvms_dhcpd-v6-udp-547-access: "
+    ${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 547 -j ACCEPT
+
+### DNS
+	#${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "kvms_dns-v4-udp-access: "
+    ${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 53 -j LOG --log-prefix "kvms_dns-v6-udp-access: "
+    ${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 53 -j ACCEPT
+
+### NTP
+	#${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "kvms_ntp-v4-udp-access: "
+    #${IPT} -A MY_UDP_GUESTWv4 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 123 -j LOG --log-prefix "kvms_ntp-v6-udp-access: "
+    #${IPT6} -A MY_UDP_GUESTWv6 -i ${GUESTW} -m conntrack --ctstate NEW -p udp --dport 123 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_UDP_GUESTWv4 -j LOG --log-prefix "forbidden from kvms v4 udp: "
+	#${IPT6} -A MY_UDP_GUESTWv6 -j LOG --log-prefix "forbidden from kvms v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_GUESTWv4 -j DROP
+    ${IPT6} -A MY_UDP_GUESTWv6 -j DROP
+
+
+###########################################################################################################################################################################################################
+#########################  nic for IPv6:  HE6  #########################
+########################################################################
+
+### MY_ICMP_HE6
+
+### create MY_ICMP_HE6 rules
+	${IPT} -N MY_ICMP_HE6v4
+	${IPT6} -N MY_ICMP_HE6v6
+
+### HE6 icmp traffic goes to MY_ICMP_HE6
+    ${IPT} -A INPUT -i ${HE6} -p icmp -j MY_ICMP_HE6v4
+    ${IPT6} -A INPUT -i ${HE6} -p icmpv6 -j MY_ICMP_HE6v6
+        
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j LOG --log-prefix "HE6_icmp-fragmentation-needed: "
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type fragmentation-needed -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-request -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+	#${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j LOG --log-prefix "HE6_icmp-echo-reply: "
+    ${IPT} -A MY_ICMP_HE6v4 -p icmp --icmp-type echo-reply -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_ICMP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 icmp: "
+	
+### standard policy	
+    ${IPT} -A MY_ICMP_HE6v4 -j DROP
+    
+### MY_ICMP_HE6v6
+	
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type destination-unreachable -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type packet-too-big -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type time-exceeded -m conntrack --ctstate RELATED -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type parameter-problem -m conntrack --ctstate RELATED -j ACCEPT
+
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type echo-request -m limit --limit 10/sec -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
+
+### router advertisements
+    ${IPT6} -A MY_ICMP_HE6v6 -i ${HE6} -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -i ${HE6} -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+
+### router neighbor advertisements
+    ${IPT6} -A MY_ICMP_HE6v6 -i ${HE6} -p icmpv6 --icmpv6-type neighbor-solicitation -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -i ${HE6} -p icmpv6 --icmpv6-type neighbor-advertisement -j ACCEPT
+
+### mobile-ipv6
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 144 -j ACCEPT
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 146 -j ACCEPT
+
+### Inverse Neighbor Discovery
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 141 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 142 -j ACCEPT
+
+### Multicast groups + multicast listener
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 130 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 131 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 132 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 143 -j ACCEPT
+
+### Send - Certification Path Soli./Advert.
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 148 -j ACCEPT
+    #${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 149 -j ACCEPT
+
+### multicast router
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 151 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 152 -j ACCEPT
+    ${IPT6} -A MY_ICMP_HE6v6 -p icmpv6 --icmpv6-type 153 -j ACCEPT
+
+### log rest
+	#${IPT6} -A MY_ICMP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 icmp: "
+	
+### standard policy	
+    ${IPT6} -A MY_ICMP_HE6v6 -j DROP
+
+#----------------------------------------------------------------------#
+
+### MY_TCP_HE6
+
+### create MY_TCP_HE6 rules
+	${IPT} -N MY_TCP_HE6v4
+	${IPT6} -N MY_TCP_HE6v6
+
+### HE6 tcp traffic goes to MY_TCP_HE6
+    ${IPT} -A INPUT -i ${HE6} -p tcp -j MY_TCP_HE6v4
+    ${IPT6} -A INPUT -i ${HE6} -p tcp -j MY_TCP_HE6v6
+
+###  drop stealth scans etc. ###
+
+#### no flags
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags ALL NONE -j DROP
+
+#### SYN and FIN flags
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+#### SYN and RST flags at the same time
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+#### FIN and RST flags at the same time
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+
+#### FIN but no ACK
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags ACK,FIN FIN -j DROP
+
+#### PSH but no ACK
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags ACK,PSH PSH -j DROP
+
+#### URG but no ACK
+    #${IPT} -A MY_TCP_HE6v4 -p tcp --tcp-flags ACK,URG URG -j DROP
+
+### bla
+	${IPT} -A MY_TCP_HE6v4 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
+
+### proto 41
+	#${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v4-access: "
+	#${IPT} -A MY_TCP_HE6v4 -i ${HE6} -s ${TFFM} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
+	
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j LOG --log-prefix "HE6_proto-41-v6-access: "
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 41 -j ACCEPT
+
+### SSH
+    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "HE6_ssh-v4-access: "
+    #${IPT} -A MY_TCP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+    
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j LOG --log-prefix "HE6_ssh-v6-access: "
+    ${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 23235 -j ACCEPT
+
+### DNS
+	#${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j LOG --log-prefix "HE6_dns-v6-tcpp-access: "
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 53 -j ACCEPT
+    
+### DHCPv6 requests
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 547 -j LOG --log-prefix "HE6_dhcpd-547-v6-tcp-access: "
+    #${IPT6} -A MY_TCP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p tcp --dport 547 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_TCP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 tcp: "
+	#${IPT6} -A MY_TCP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 tcp: "
+	
+### drop rest
+    ${IPT} -A MY_TCP_HE6v4 -j DROP    
+    ${IPT6} -A MY_TCP_HE6v6 -j DROP    
+    
+#----------------------------------------------------------------------#
+    
+### MY_UDP_HE6
+
+### create MY_UDP_HE6 rules
+	${IPT} -N MY_UDP_HE6v4
+	${IPT6} -N MY_UDP_HE6v6
+
+### HE6 tcp traffic goes to MY_TCP_HE6
+    ${IPT} -A INPUT -i ${HE6} -p udp -j MY_UDP_HE6v4
+    ${IPT6} -A INPUT -i ${HE6} -p udp -j MY_UDP_HE6v6
+    
+### OPENVPN_V2
+    #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "HE6_openvpn-v4-udp-access: "
+    #${IPT} -A MY_UDP_HE6v4 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+    
+    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j LOG --log-prefix "HE6_openvpn-v6-udp-access: "
+    #${IPT6} -A MY_UDP_HE6v6 -i ${HE6} -m conntrack --ctstate NEW -p udp --dport 1194 -j ACCEPT
+
+### log rest
+	#${IPT} -A MY_UDP_HE6v4 -j LOG --log-prefix "forbidden from HE6 v4 udp: "
+	#${IPT6} -A MY_UDP_HE6v6 -j LOG --log-prefix "forbidden from HE6 v6 udp: "
+	
+### drop rest
+    ${IPT} -A MY_UDP_HE6v4 -j DROP
+    ${IPT6} -A MY_UDP_HE6v6 -j DROP
+    
+    
+###########################################################################################################################################################################################################
+#########################  natting + forwarding  #######################
+########################################################################
+    
+############################# masquerading #############################
+	
+
+	${IPT} -t nat -A POSTROUTING -o ${WORLD} -j MASQUERADE
+	#${IPT6} -t nat -A POSTROUTING -o ${HE6} -j MASQUERADE
+	${IPT6} -t nat -A POSTROUTING -o ${HE6} -j SNAT --to-source 2001:470:1f0a:3c::2
+
+############################ destination nat ###########################
+
+	# natting for berry
+	#${IPT} -t nat -A PREROUTING -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 20 -j DNAT --to-destination 192.168.77.24:20
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 21 -j DNAT --to-destination 192.168.77.24:21
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 443 -j DNAT --to-destination 192.168.77.24:443
+	
+	# natting for kippo ;-)
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 192.168.99.117:2222
+	#${IPT} -t nat -A PREROUTING -i ${WORLD} -p tcp --dport 22 -j DNAT --to-destination 192.168.77.21:2222
+
+############################## forwarding ##############################    
+
+############### allow forwarding for exisitng connections ##############
+
+    ${IPT} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    ${IPT6} -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
+### MY_ICMP_WORLD, MY_TCP_WORLD, MY_UDP_WORLD
+    #${IPT} -A FORWARD -i ${WORLD} -s ${MEDIALAN} -m conntrack --ctstate NEW -j ACCEPT
+    #${IPT} -A FORWARD -i ${WORLD} -s ${WLAN} -m conntrack --ctstate NEW -j ACCEPT
+    #${IPT} -A FORWARD -i ${WORLD} -s ${GUESTW} -m conntrack --ctstate NEW -j ACCEPT
+    
+    #${IPT6} -A FORWARD -i ${WORLD} -s ${MEDIALAN} -m conntrack --ctstate NEW -j ACCEPT
+    #${IPT6} -A FORWARD -i ${WORLD} -p tcp -j MY_TCP_WORLDv6
+    #${IPT6} -A FORWARD -i ${WORLD} -p udp -j MY_UDP_WORLDv6
+
+#### WORLD ####
+### world -> lan
+	#${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp --dport 20 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	#${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp --dport 21 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	#${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp --dport 2222 -d 192.168.77.21 -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp --dport 80 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+	#${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp --dport 443 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+
+### world -> kvms
+#	${IPT} -A FORWARD -i ${WORLD} -o ${GUESTW} -p tcp -d 192.168.99.117 --dport 2222 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+#	${IPT} -A FORWARD -i ${WORLD} -o ${MEDIALAN} -p tcp -d 192.168.77.21 --dport 22 -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
+
+##### MEDIALAN #####
+### medialan -> world
+	${IPT} -A FORWARD -i ${MEDIALAN} -o ${WORLD} -s ${MEDIALANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${MEDIALAN} -o ${WORLD} -s ${MEDIALANNET6} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${WORLD} -m conntrack --ctstate NEW -j ACCEPT
+
+### medialan -> kvms
+	#${IPT} -A FORWARD -i ${MEDIALAN} -o ${GUESTW} -s ${MEDIALANNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${MEDIALAN} -o ${GUESTW} -s ${MEDIALANNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+### medialan -> he6
+	${IPT} -A FORWARD -i ${MEDIALAN} -o ${HE6} -s ${MEDIALANNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${MEDIALAN} -o ${HE6} -s ${MEDIALANNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+### medialan -> openvpn(t)
+	#${IPT} -A FORWARD -i ${MEDIALAN} -o ${OVPNT} -s ${MEDIALANNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${MEDIALAN} -o ${OVPNT} -s ${MEDIALANNET6} -m conntrack --ctstate NEW -j ACCEPT
+		
+##### GUESTW #####
+### kvms -> world
+	${IPT} -A FORWARD -i ${GUESTW} -o ${WORLD} -s ${GUESTWNET} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -i ${GUESTW} -o ${WORLD} -s ${GUESTWNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+### kvms -> hipv6
+	#${IPT6} -A FORWARD -i ${GUESTW} -o ${HE6} -s ${GUESTWNET6} -m conntrack --ctstate NEW -j ACCEPT
+
+##### OVPN+OVPNT #####
+### ovpn -> lan
+	#${IPT} -A FORWARD -i ${OVPNT} -o ${MEDIALAN} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${OVPNT} -o ${MEDIALAN} -s ${OVPNT6NET} -m conntrack --ctstate NEW -j ACCEPT
+
+
+##### OVPN+OVPNT #####
+### ovpn -> world
+	#${IPT} -A FORWARD -i ${OVPNT} -o ${WORLD} -s ${OVPNTNET} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT6} -A FORWARD -i ${OVPNT} -o ${WORLD} -s ${OVPNT6NET} -m conntrack --ctstate NEW -j ACCEPT
+	
+	
+### -> hipv6
+	#${IPT} -A FORWARD -o ${HE6} -s ${INTMEDIALAN} -m conntrack --ctstate NEW -j ACCEPT
+	#${IPT} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	${IPT6} -A FORWARD -o ${HE6} -m conntrack --ctstate NEW -j ACCEPT
+	
+########################################################################
+######################## end of rules ##################################
+########################################################################
+
+	;;
+	
+  stop)
+  
+  echo "stopping firewall"
+
+  echo "stopping firewall"
+
+### flush tables
+    ${IPT} -t nat -F
+    ${IPT} -t mangle -F
+    ${IPT} -t nat -X
+    ${IPT} -t mangle -X
+    ${IPT} -F
+
+    ${IPT6} -t mangle -F
+    ${IPT6} -t mangle -X
+    ${IPT6} -t nat -F
+    ${IPT6} -t nat -X
+    ${IPT6} -F
+
+### flush and destroy ipset, uncomment if you really wanna lost all entries !!!
+	${IPS} save ${BADHOSTSLIST} > /root/${BADHOSTSLIST}.bak
+    ${IPS} flush ${BADHOSTSLIST}
+    ${IPS} destroy ${BADHOSTSLIST}
+
+	#${IPS} save ${INTBAD} > /root/${INTBAD}.bak
+    #${IPS} flush ${INTBAD}
+    #${IPS} destroy ${INTBAD}
+    
+	#${IPS} save ${INTGOOD} > /root/${INTGOOD}.bak
+    #${IPS} flush ${INTGOOD}
+    #${IPS} destroy ${INTGOOD}
+
+	#${IPS} save ${INTWHITE} > /root/${INTWHITE}.bak
+    #${IPS} flush ${INTWHITE}
+    #${IPS} destroy ${INTWHITE}
+
+	#${IPS} save ${KAKTUS} > /root/${KAKTUS}.bak
+    #${IPS} flush ${KAKTUS}
+    #${IPS} destroy ${KAKTUS}
+
+### WORLD
+	${IPT} -F MY_ICMP_WORLDv4
+	${IPT} -X MY_ICMP_WORLDv4
+	
+    ${IPT6} -F MY_ICMP_WORLDv6
+    ${IPT6} -X MY_ICMP_WORLDv6
+    
+    ${IPT} -F MY_TCP_WORLDv4
+    ${IPT} -X MY_TCP_WORLDv4
+    
+    ${IPT6} -F MY_TCP_WORLDv6
+    ${IPT6} -X MY_TCP_WORLDv6
+    
+    ${IPT} -F MY_UDP_WORLDv4
+    ${IPT} -X MY_UDP_WORLDv4
+    
+    ${IPT6} -F MY_UDP_WORLDv6
+    ${IPT6} -X MY_UDP_WORLDv6
+    
+### MEDIALAN
+	${IPT} -F MY_ICMP_MEDIALANv4
+	${IPT} -X MY_ICMP_MEDIALANv4
+	
+    ${IPT6} -F MY_ICMP_MEDIALANv6
+    ${IPT6} -X MY_ICMP_MEDIALANv6
+    
+    ${IPT} -F MY_TCP_MEDIALANv4
+    ${IPT} -X MY_TCP_MEDIALANv4
+    
+    ${IPT6} -F MY_TCP_MEDIALANv6
+    ${IPT6} -X MY_TCP_MEDIALANv6
+    
+    ${IPT} -F MY_UDP_MEDIALANv4
+    ${IPT} -X MY_UDP_MEDIALANv4
+    
+    ${IPT6} -F MY_UDP_MEDIALANv6
+    ${IPT6} -X MY_UDP_MEDIALANv6
+    
+### GUESTW
+	${IPT} -F MY_ICMP_GUESTWv4
+	${IPT} -X MY_ICMP_GUESTWv4
+	
+    ${IPT6} -F MY_ICMP_GUESTWv6
+    ${IPT6} -X MY_ICMP_GUESTWv6
+    
+    ${IPT} -F MY_TCP_GUESTWv4
+    ${IPT} -X MY_TCP_GUESTWv4
+    
+    ${IPT6} -F MY_TCP_GUESTWv6
+    ${IPT6} -X MY_TCP_GUESTWv6
+    
+    ${IPT} -F MY_UDP_GUESTWv4
+    ${IPT} -X MY_UDP_GUESTWv4
+    
+    ${IPT6} -F MY_UDP_GUESTWv6
+    ${IPT6} -X MY_UDP_GUESTWv6
+    
+### HE6
+	${IPT} -F MY_ICMP_HE6v4
+	${IPT} -X MY_ICMP_HE6v4
+	
+    ${IPT6} -F MY_ICMP_HE6v6
+    ${IPT6} -X MY_ICMP_HE6v6
+    
+    ${IPT} -F MY_TCP_HE6v4
+    ${IPT} -X MY_TCP_HE6v4
+    
+    ${IPT6} -F MY_TCP_HE6v6
+    ${IPT6} -X MY_TCP_HE6v6
+    
+    ${IPT} -F MY_UDP_HE6v4
+    ${IPT} -X MY_UDP_HE6v4
+    
+    ${IPT6} -F MY_UDP_HE6v6
+    ${IPT6} -X MY_UDP_HE6v6
+
+### delete tables
+	${IPT} -X
+    ${IPT6} -X
+        
+### deactivate ip 4+6 forwarding
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+    echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
+
+### IPv6 Default-Policies setzen
+    ${IPT} -P INPUT ACCEPT
+    ${IPT} -P OUTPUT ACCEPT
+    ${IPT} -P FORWARD ACCEPT
+
+    ${IPT6} -P INPUT ACCEPT
+    ${IPT6} -P OUTPUT ACCEPT
+    ${IPT6} -P FORWARD ACCEPT
+
+    echo "firewall stopped"
+
+  ;;
+
+
+   status)
+
+    echo "table filter"
+    ${IPT} -L -vn
+    echo "table nat"
+    ${IPT} -t nat -L -vn
+    echo "table mangle"
+    ${IPT} -t mangle -L -vn
+
+    echo "table filter"
+    ${IPT6} -L -vn
+    echo "table mangle"
+    ${IPT6} -t mangle -L -vn
+
+   ;;
+
+########################### usage of script ###########################
+
+   *)
+    echo "Fehlerhafter Aufruf"
+    echo "Syntax: $0 {start|stop|status}"
+
+    exit 1
+
+    ;;
+
+esac
+
+exit 0

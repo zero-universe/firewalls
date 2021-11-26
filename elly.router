@@ -1,9 +1,14 @@
 #!/bin/bash
 
 #
-# last modified 2015.09.21
+# last modified 2017.06.04
 # zero.universe@gmail.com
 #
+
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
 
 ############################ definitions ###############################
 
@@ -12,10 +17,10 @@
 
 IPT=$(which iptables)
 IPT6=$(which ip6tables)
-WORLD="eth0"
-LAN="eth1"
+WORLD="ens3"
+LAN="ens4"
 MOD=$(which modprobe)
-LANNET="192.168.133.0/24"
+LANNET="192.168.100.0/24"
 #LANNET6="fd54:fc9a:8b7a:765e::/64"
 
 case "$1" in
@@ -747,11 +752,20 @@ case "$1" in
 
    ;;
 
+
+   restart)
+   
+    iptables-save > /root/iptables.tmp
+    iptables-restore < /root/iptables.tmp
+    rm -f /root/iptables.tmp
+    
+    ;;
+    
 ########################### usage of script ###########################
 
    *)
     echo "Fehlerhafter Aufruf"
-    echo "Syntax: $0 {start|stop|status}"
+    echo "Syntax: $0 {start|stop|restart|status}"
 
     exit 1
 

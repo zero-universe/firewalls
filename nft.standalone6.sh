@@ -1,9 +1,21 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2016.04.20
+# last modified 2017.06.04
 # zero.universe@gmail.com
 #
+
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
+
+
+#define int_if1 = eth0
+#define int_if2 = eth1
+#define int_ifs = { $int_if1, $int_if2 }
+#filter input iif $int_ifs accept
+
 
 table ip6 filter {
 	
@@ -15,53 +27,42 @@ table ip6 filter {
 
 		# established/related connections
 		ct state {established, related} accept
+
+		# loopback interface
+		iif lo accept
 		
-		ip6 protocol tcp goto my_tcpv6
-		ip6 protocol udp goto my_udpv6
-		ip6 protocol icmpv6 goto my_icmpv6
+		iif eth0 goto eth0_v6
 
 		}
 		
 		
-	chain my_tcpv6 {
+	chain eth0_v6 {
+		
+		# invalid connections
+		ct state invalid drop
+	
+		# established/related connections
+		ct state {established, related} accept
 		
 		# bad tcp -> avoid network scanning:
-        iif wlp2s0 tcp flags & (fin|syn) == (fin|syn) drop
-        iif wlp2s0 tcp flags & (syn|rst) == (syn|rst) drop
-        iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
-        iif wlp2s0 tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
+        #tcp flags & (fin|syn) == (fin|syn) drop
+        #tcp flags & (syn|rst) == (syn|rst) drop
+        #tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop 
+        #tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 		
 		# loopback interface
 		iif lo accept
 
 		# open tcp ports: sec
-		iif wlp2s0 tcp dport { 23235 } counter accept
+		tcp dport { 22,23235 } counter accept
 
-		# everything else
-		#drop	
-    
-        }
-	
-	
-	chain my_udpv6 {
-		ct state {established, related} accept
-        
-		# loopback interface
-		iif lo accept
-    
-        }
-         
-            
-	chain my_icmpv6 {
-		iif wlp2s0 ct state {established, related} accept
-        
-        # invalid connections
-		iif wlp2s0 ct state invalid drop
+		# no ping floods:
+        ip6 nexthdr icmpv6 limit rate 20/second accept
 
 		# loopback interface
 		iif lo accept
 
-		iif wlp2s0 ipv6-icmp type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, router-solicitation, router-advertisement, neighbor-solicitation, neighbor-advertisement, 141, 142, 151, 152, 153  } accept
+		icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, 133, 134, 135, 136, 141, 142, 151, 152, 153  } accept
     
         }
 	
@@ -73,6 +74,9 @@ table ip6 filter {
 	
 	chain output { 
 		type filter hook output priority 0; policy accept;
-		}
 		
+		# loopback interface
+		#oif lo accept
+		
+		}
 }

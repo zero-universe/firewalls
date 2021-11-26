@@ -1,0 +1,47 @@
+# interfaces
+world_if="em0"
+worldnet = $world_if:network
+
+media_if="em1"
+medianet= $media_if:network
+
+guest_if="em2"
+guestnet = $guest_if:network
+
+back_if="em3"
+backnet = $back_if:network
+
+wifi_if="wlan0"
+wifinet= $wifi_if:network
+
+network_services = "{ 53 67 }"
+
+
+# NAT
+nat on $world_if inet from !($world_if) -> ($world_if:0)
+
+# options
+#set block-policy block
+#block in log all
+block all
+
+#pass on lo
+set skip on lo
+
+# out is ok
+#pass out log quick
+pass out quick on $world_if keep state
+
+# antispoof for all traffic
+block drop in quick from { urpf-failed, no-route } to any
+
+
+
+# ssh access
+pass in proto tcp from any port 23235
+
+# allow network_services
+pass in on $media_if inet proto { tcp, udp } port $network_services keep state
+pass in on $guest_if inet proto { tcp, udp } port $network_services keep state
+pass in on $back_if inet proto { tcp, udp } port $network_services keep state
+pass in on $wifi_if inet proto { tcp, udp } port $network_services keep state

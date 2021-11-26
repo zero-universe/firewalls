@@ -1,10 +1,16 @@
 #!/usr/bin/nft -f
 
 #
-# last modified 2016.04.20
+# last modified 2017.06.04
 # zero.universe@gmail.com
 #
 
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
+
+flush table filter
 table filter {
 	
 	chain input	{
@@ -103,6 +109,7 @@ table filter {
 }
 
 
+flush table nat
 table nat {
 	
 	chain prerouting {

@@ -10,18 +10,13 @@ set -o errexit
 #set -o noclobber
 set -o noglob
 
-
-define world = ens3
-define lan = ens4
-
 # nics:
 #
 # ens3 = world
-# ens4 = lan
+# esn4 = lan
 
-flush ruleset
 
-table ip filter {
+table ip6 filter {
 	
 	chain input	{ 
 		type filter hook input priority 0; policy drop; 
@@ -30,54 +25,53 @@ table ip filter {
 		ct state invalid drop
 
 		# loopback interface
-		iifname lo accept
+		iif lo accept
 		
 		# established/related connections
 		ct state {established, related} accept
 
 		# incoming inet trafic
-		iifname $world ip protocol tcp goto my_world_tcpv4
-		iifname $world ip protocol udp goto my_world_udpv4
-		iifname $world ip protocol icmp goto my_world_icmpv4
-		
-		iifname $lan ip protocol tcp goto my_lan_tcpv4
-		iifname $lan ip protocol udp goto my_lan_udpv4
-		iifname $lan ip protocol icmp goto my_lan_icmpv4
+		iif ens3 ip protocol tcp goto my_world_tcpv6
+		iif ens3 ip protocol udp goto my_world_udpv6
+		iif ens3 ip protocol icmpv6 goto my_world_icmpv6
+		         
+		iif ens4 ip protocol tcp goto my_lan_tcpv6
+		iif ens4 ip protocol udp goto my_lan_udpv6
+		iif ens4 ip protocol icmpv6 goto my_lan_icmpv6
 
 		}
 		
 
-	chain my_world_tcpv4 {
+	chain my_world_tcpv6 {
 		
 		# invalid connections
 		#ct state invalid drop
 		
 		# loopback interface
-		#iifname lo accept
+		#iif lo accept
 		
 		# established/related connections
-		#ct state {established, related} accept
+		ct state {established, related} accept
 		
 		# bad tcp -> avoid network scanning:
         #tcp flags & (fin|syn) == (fin|syn) drop
         #tcp flags & (syn|rst) == (syn|rst) drop
-        #tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
         #tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 		
 		# open tcp ports: ssh
-		tcp dport ssh counter accept
-		tcp dport ssh ct state new tcp flags & (syn | ack) == syn counter accept
+		iif ens3 tcp dport 22 accept
 		
         }
 	
 	
-	chain my_world_udpv4 {
+	chain my_world_udpv6 {
 
 		# invalid connections
 		#ct state invalid drop
 
 		# loopback interface
-		#iifname lo accept
+		#iif lo accept
 		
 		# established/related connections
 		#ct state {established, related} accept
@@ -85,30 +79,30 @@ table ip filter {
         }
          
             
-	chain my_world_icmpv4 {
+	chain my_world_icmpv6 {
 
 		# invalid connections
 		#ct state invalid drop
 
 		# loopback interface
-		#iifname lo accept
+		#iif lo accept
 		
 		# established/related connections
 		#ct state {established, related} accept
 		
-		icmp type { echo-request, echo-reply, destination-unreachable, parameter-problem } counter accept
-		limit rate 10/second counter accept
+		iif ens3 icmpv6 type { echo-request, echo-reply, destination-unreachable, parameter-problem } counter accept
+		iif ens3 limit rate 10/second counter accept
     
         }
         
         
-	chain my_lan_tcpv4 {
+	chain my_lan_tcpv6 {
 		
 		# invalid connections
 		#ct state invalid drop
 
 		# loopback interface
-		#iifname lo accept
+		#iif lo accept
 		
 		# established/related connections
 		#ct state {established, related} accept
@@ -116,16 +110,16 @@ table ip filter {
 		# bad tcp -> avoid network scanning:
         #tcp flags & (fin|syn) == (fin|syn) drop
         #tcp flags & (syn|rst) == (syn|rst) drop
-        #tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
+        tcp flags & (fin|syn|rst|psh|ack|urg) == 0 drop
         #tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) drop
 
 		# open tcp ports: ssh,dns,dhcp
-		tcp dport { 22,53,67,68 } accept
+		iif ens4 tcp dport { 22,53,67,68 } accept
 
         }
 	
 	
-	chain my_lan_udpv4 {
+	chain my_lan_udpv6 {
 
 		# invalid connections
 		#ct state invalid drop
@@ -137,13 +131,12 @@ table ip filter {
 		#ct state {established, related} accept
 
 		# open tcp ports: dns,dhcp
-		#iifname $lan tcp dport { 67,68 } accept
-		tcp dport { 67,68 } accept
+		iif ens4 tcp dport { 53,67,68 } accept
 		
         }
          
             
-	chain my_lan_icmpv4 {
+	chain my_lan_icmpv6 {
 
 		# invalid connections
 		#ct state invalid drop
@@ -154,9 +147,8 @@ table ip filter {
 		# established/related connections
 		#ct state {established, related} accept
 		
-		iifname $lan icmp type { echo-request, echo-reply, destination-unreachable, parameter-problem } counter accept
-		iifname $lan limit rate 10/second counter accept
-		accept
+		iif ens4 icmpv6 type { echo-request, echo-reply, destination-unreachable, parameter-problem } counter accept
+		iif ens4 limit rate 10/second counter accept
     
         }
 	
@@ -180,16 +172,13 @@ table ip filter {
 		ct state invalid drop
 
 		# loopback interface
-		iifname lo accept
+		iif lo accept
 		
 		# established/related connections
 		ct state {established, related} accept
-		
-		iifname $world oifname $lan ct state {established, related} accept
-		iifname $lan oifname $world ct state {established, related} accept
 
-		#iifname $lan oifname $world tcp dport { 22,53,80,443 } counter accept
-		#iifname $lan oifname $world udp dport { 53 } counter accept
+		iif ens4 oif ens3 tcp dport { 22,53,80,443 } counter accept
+		iif ens4 oif ens3 udp dport { 53 } counter accept
 
 		}
 		
@@ -208,10 +197,10 @@ table nat {
 	chain postrouting {
 		type nat hook postrouting priority -150; policy accept;
 		
-		oifname $world masquerade
+		oif ens3 masquerade
 		
 		# snat
-		#ip saddr 192.168.199.0/24 oifname $world snat 192.168.199.108
+		#ip saddr 192.168.199.0/24 oif ens3 snat 192.168.199.108
 		
 		}
 

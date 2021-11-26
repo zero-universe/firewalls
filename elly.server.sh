@@ -1,9 +1,14 @@
 #!/bin/bash
 
 #
-# last modified 2015.09.21
+# last modified 2017.06.04
 # zero.universe@gmail.com
 #
+
+set -o nounset
+set -o errexit
+#set -o noclobber
+set -o noglob
 
 ############################ definitions ###############################
 
@@ -618,11 +623,20 @@ case "$1" in
 
    ;;
 
+
+   restart)
+   
+    iptables-save > /root/iptables.tmp
+    iptables-restore < /root/iptables.tmp
+    rm -f /root/iptables.tmp
+    
+    ;;
+    
 ########################### usage of script ###########################
 
    *)
-    echo "try again"
-    echo "Syntax: $0 {start|stop|status}"
+    echo "Fehlerhafter Aufruf"
+    echo "Syntax: $0 {start|stop|restart|status}"
 
     exit 1
 

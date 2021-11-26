@@ -1,0 +1,288 @@
+flush ruleset
+table ip mangle {
+	chain PREROUTING {
+		type filter hook prerouting priority -150; policy accept;
+	}
+
+	chain INPUT {
+		type filter hook input priority -150; policy accept;
+	}
+
+	chain FORWARD {
+		type filter hook forward priority -150; policy accept;
+	}
+
+	chain OUTPUT {
+		type route hook output priority -150; policy accept;
+	}
+
+	chain POSTROUTING {
+		type filter hook postrouting priority -150; policy accept;
+	}
+}
+table ip nat {
+	chain PREROUTING {
+		type nat hook prerouting priority -100; policy accept;
+	}
+
+	chain INPUT {
+		type nat hook input priority 100; policy accept;
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority 100; policy accept;
+		oifname "enp5s0" masquerade
+	}
+}
+table ip filter {
+	chain INPUT {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" jump MY_LOOPYv4
+		ct state established,related accept
+		iifname "enp5s0" ip protocol icmp jump MY_ICMP_WORLDv4
+		iifname "enp5s0" ip protocol tcp jump MY_TCP_WORLDv4
+		iifname "enp5s0" ip protocol udp jump MY_UDP_WORLDv4
+		iifname "br0" ip protocol icmp jump MY_ICMP_MEDIALANv4
+		iifname "br0" ip protocol tcp jump MY_TCP_MEDIALANv4
+		iifname "br0" ip protocol udp jump MY_UDP_MEDIALANv4
+		iifname "enp11s0" ip protocol icmp jump MY_ICMP_GUESTWv4
+		iifname "enp11s0" ip protocol tcp jump MY_TCP_GUESTWv4
+		iifname "enp11s0" ip protocol udp jump MY_UDP_GUESTWv4
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy drop;
+		ct state established,related accept
+		iifname "br0" oifname "enp5s0" ip saddr 192.168.77.0/24 ct state new accept
+		iifname "enp11s0" oifname "enp5s0" ip saddr 192.168.99.0/24 ct state new accept
+	}
+
+	chain OUTPUT {
+		type filter hook output priority 0; policy accept;
+	}
+
+	chain MY_ICMP_GUESTWv4 {
+		icmp type destination-unreachable ct state related accept
+		icmp type parameter-problem ct state related accept
+		icmp type echo-request limit rate 10/second accept
+		icmp type echo-request ct state established,related,new accept
+		icmp type echo-reply ct state established,related accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_ICMP_MEDIALANv4 {
+		icmp type destination-unreachable ct state related accept
+		icmp type parameter-problem ct state related accept
+		icmp type echo-request limit rate 10/second accept
+		icmp type echo-request ct state established,related,new accept
+		icmp type echo-reply ct state established,related accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_ICMP_WORLDv4 {
+		icmp type destination-unreachable ct state related accept
+		icmp type parameter-problem ct state related accept
+		icmp type echo-request limit rate 10/second accept
+		icmp type echo-request ct state new accept
+		icmp type echo-reply ct state established,related accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_LOOPYv4 {
+		iifname "lo" accept
+	}
+
+	chain MY_TCP_GUESTWv4 {
+		tcp flags & (fin | syn | rst | psh | ack | urg) == fin | psh | urg counter packets 0 bytes 0 drop
+		iifname "enp11s0" ct state new tcp dport bootps accept
+		iifname "enp11s0" ct state new tcp dport domain accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_TCP_MEDIALANv4 {
+		tcp flags & (fin | syn | rst | psh | ack | urg) == fin | psh | urg drop
+		iifname "br0" ct state new tcp dport bootps accept
+		iifname "br0" ct state new tcp dport domain accept
+		iifname "br0" ct state new tcp dport 3128 accept
+		iifname "br0" ct state new tcp dport 22 accept
+		iifname "br0" ct state new tcp dport 23235 accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_TCP_WORLDv4 {
+		tcp flags & (fin | syn | rst | psh | ack | urg) == fin | psh | urg drop
+		iifname "enp5s0" ct state new tcp dport 23235 accept
+		iifname "enp5s0" ct state new tcp dport 22 accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_UDP_GUESTWv4 {
+		iifname "enp11s0" ct state new udp dport bootps accept
+		iifname "enp11s0" ct state new udp dport domain accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_UDP_MEDIALANv4 {
+		iifname "br0" ct state new udp dport bootps accept
+		iifname "br0" ct state new udp dport domain accept
+		counter packets 203 bytes 13850 drop
+	}
+
+	chain MY_UDP_WORLDv4 {
+		counter packets 0 bytes 0 drop
+	}
+}
+
+table ip6 nat {
+	chain PREROUTING {
+		type nat hook prerouting priority -100; policy accept;
+	}
+
+	chain INPUT {
+		type nat hook input priority 100; policy accept;
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority 100; policy accept;
+	}
+}
+
+table ip6 mangle {
+	chain PREROUTING {
+		type filter hook prerouting priority -150; policy accept;
+	}
+
+	chain INPUT {
+		type filter hook input priority -150; policy accept;
+	}
+
+	chain FORWARD {
+		type filter hook forward priority -150; policy accept;
+	}
+
+	chain OUTPUT {
+		type route hook output priority -150; policy accept;
+	}
+
+	chain POSTROUTING {
+		type filter hook postrouting priority -150; policy accept;
+	}
+}
+
+table ip6 filter {
+	chain INPUT {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" jump MY_LOOPYv6
+		ct state established,related accept
+		iifname "enp5s0" meta l4proto ipv6-icmp jump MY_ICMP_WORLDv6
+		iifname "enp5s0" meta l4proto tcp jump MY_TCP_WORLDv6
+		iifname "enp5s0" meta l4proto udp jump MY_UDP_WORLDv6
+		iifname "br0" meta l4proto ipv6-icmp jump MY_ICMP_MEDIALANv6
+		iifname "br0" meta l4proto tcp jump MY_TCP_MEDIALANv6
+		iifname "br0" meta l4proto udp jump MY_UDP_MEDIALANv6
+		iifname "enp11s0" meta l4proto ipv6-icmp jump MY_ICMP_GUESTWv6
+		iifname "enp11s0" meta l4proto tcp jump MY_TCP_GUESTWv6
+		iifname "enp11s0" meta l4proto udp jump MY_UDP_GUESTWv6
+	}
+
+	chain FORWARD {
+		type filter hook forward priority 0; policy drop;
+		ct state established,related accept
+		iifname "br0" oifname "enp5s0" ip6 saddr fd54:fc9a:8b7a:765e::/64 ct state new accept
+		iifname "enp11s0" oifname "enp5s0" ip6 saddr fd56:fc9a:8b7a:765e::/64 ct state new accept
+	}
+
+	chain OUTPUT {
+		type filter hook output priority 0; policy accept;
+	}
+
+	chain MY_ICMP_GUESTWv6 {
+		icmpv6 type destination-unreachable ct state related accept
+		icmpv6 type packet-too-big ct state related accept
+		icmpv6 type time-exceeded ct state related accept
+		icmpv6 type parameter-problem ct state related accept
+		icmpv6 type echo-request limit rate 10/second counter packets 0 bytes 0 accept
+		icmpv6 type echo-reply accept
+		iifname "enp11s0" icmpv6 type nd-router-solicit accept
+		iifname "enp11s0" icmpv6 type nd-router-advert accept
+		iifname "enp11s0" icmpv6 type nd-neighbor-solicit accept
+		iifname "enp11s0" icmpv6 type nd-neighbor-advert accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_ICMP_MEDIALANv6 {
+		icmpv6 type destination-unreachable ct state related accept
+		icmpv6 type packet-too-big ct state related accept
+		icmpv6 type time-exceeded ct state related accept
+		icmpv6 type parameter-problem ct state related accept
+		icmpv6 type echo-request limit rate 10/second accept
+		icmpv6 type echo-reply accept
+		iifname "br0" icmpv6 type nd-router-solicit accept
+		iifname "br0" icmpv6 type nd-router-advert accept
+		iifname "br0" icmpv6 type nd-neighbor-solicit accept
+		iifname "br0" icmpv6 type nd-neighbor-advert accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_ICMP_WORLDv6 {
+		icmpv6 type destination-unreachable ct state related accept
+		icmpv6 type packet-too-big ct state related accept
+		icmpv6 type time-exceeded ct state related accept
+		icmpv6 type parameter-problem ct state related accept
+		icmpv6 type echo-request limit rate 10/second counter packets 0 bytes 0 accept
+		icmpv6 type echo-reply accept
+		iifname "enp5s0" icmpv6 type nd-router-solicit accept
+		iifname "enp5s0" icmpv6 type nd-router-advert accept
+		iifname "enp5s0" icmpv6 type nd-neighbor-solicit accept
+		iifname "enp5s0" icmpv6 type nd-neighbor-advert accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_LOOPYv6 {
+		iifname "lo" accept
+	}
+
+	chain MY_TCP_GUESTWv6 {
+		iifname "enp11s0" ct state new tcp dport dhcpv6-server accept
+		iifname "enp11s0" ct state new tcp dport domain accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_TCP_MEDIALANv6 {
+		iifname "br0" ct state new tcp dport dhcpv6-server accept
+		iifname "br0" ct state new tcp dport 22 accept
+		iifname "br0" ct state new tcp dport domain accept
+		iifname "br0" ct state new tcp dport 23235 counter packets 0 bytes 0 accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_TCP_WORLDv6 {
+		iifname "enp5s0" ct state new tcp dport 22 accept
+		iifname "enp5s0" ct state new tcp dport 23235 accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_UDP_GUESTWv6 {
+		iifname "enp11s0" ct state new udp dport dhcpv6-server accept
+		iifname "enp11s0" ct state new udp dport domain accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_UDP_MEDIALANv6 {
+		iifname "br0" ct state new udp dport dhcpv6-server accept
+		iifname "br0" ct state new udp dport domain accept
+		counter packets 0 bytes 0 drop
+	}
+
+	chain MY_UDP_WORLDv6 {
+		counter packets 0 bytes 0 drop
+	}
+}
