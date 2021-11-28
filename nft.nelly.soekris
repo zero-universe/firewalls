@@ -107,7 +107,6 @@ table ip filter {
 		tcp flags & (fin | syn | rst | psh | ack | urg) == fin | psh | urg drop
 		iifname "br0" ct state new tcp dport bootps accept
 		iifname "br0" ct state new tcp dport domain accept
-		iifname "br0" ct state new tcp dport 3128 accept
 		iifname "br0" ct state new tcp dport 22 accept
 		iifname "br0" ct state new tcp dport 23235 accept
 		counter packets 0 bytes 0 drop
@@ -129,7 +128,7 @@ table ip filter {
 	chain MY_UDP_MEDIALANv4 {
 		iifname "br0" ct state new udp dport bootps accept
 		iifname "br0" ct state new udp dport domain accept
-		counter packets 203 bytes 13850 drop
+		counter packets 0 bytes 0 drop
 	}
 
 	chain MY_UDP_WORLDv4 {
