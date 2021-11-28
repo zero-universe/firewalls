@@ -1,0 +1,15 @@
+[Unit]
+Description=start soekris firewall
+After=network-online.target
+Before=hostapd.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/firewall/nft.load.soekris.sh start
+RemainAfterExit=true
+ExecStop=/etc/firewall/nft.load.soekris.sh stop
+StandardOutput=journal
+
+[Install]
+#WantedBy=multi-user.target
+WantedBy=network-online.target
